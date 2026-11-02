@@ -6,9 +6,11 @@ import type {
   Category,
   CategoryInput,
   ContactMessageInput,
+  CreateUserInput,
   DashboardStats,
   Location,
   LoginInput,
+  ManagedUser,
   NewsletterInput,
   Order,
   OrderQuery,
@@ -26,6 +28,8 @@ import type {
   RegisterInput,
   StockBatch,
   StockSummaryRow,
+  UpdateUserInput,
+  UserQuery,
   Vendor,
   VendorInput,
 } from '@sweets/types';
@@ -42,16 +46,23 @@ export interface ApiClientOptions {
   fetch?: typeof fetch;
 }
 
+/** Readable message from an API error body, preferring field-level validation messages. */
+function errorMessage(status: number, body: unknown): string {
+  if (typeof body !== 'object' || !body) return `HTTP ${status}`;
+  const errors = 'errors' in body && Array.isArray(body.errors) ? body.errors : [];
+  const details = errors
+    .map((e: unknown) => (typeof e === 'object' && e && 'message' in e ? String(e.message) : ''))
+    .filter(Boolean);
+  if (details.length) return [...new Set(details)].join('. ');
+  return 'message' in body ? String(body.message) : `HTTP ${status}`;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly body: unknown,
   ) {
-    super(
-      typeof body === 'object' && body && 'message' in body
-        ? String(body.message)
-        : `HTTP ${status}`,
-    );
+    super(errorMessage(status, body));
   }
 }
 
@@ -107,6 +118,16 @@ export function createApiClient(options: ApiClientOptions) {
       refresh: (refreshToken: string) => post<AuthResponse>('/auth/refresh', { refreshToken }),
       logout: (refreshToken: string) => post<void>('/auth/logout', { refreshToken }),
       me: () => get<AuthUser>('/auth/me'),
+    },
+    users: {
+      list: (q: Partial<UserQuery> = {}) => get<Paginated<ManagedUser>>('/users', q),
+      create: (input: CreateUserInput) => post<ManagedUser>('/users', input),
+      update: (id: string, input: UpdateUserInput) => patch<ManagedUser>(`/users/${id}`, input),
+      setActive: (id: string, isActive: boolean) =>
+        patch<ManagedUser>(`/users/${id}/active`, { isActive }),
+      /** Sets a new password and signs the user out everywhere. */
+      resetPassword: (id: string, password: string) =>
+        post<void>(`/users/${id}/password`, { password }),
     },
     catalog: {
       categories: (init?: FetchInit) => get<Category[]>('/categories', undefined, init),

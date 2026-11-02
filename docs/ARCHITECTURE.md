@@ -47,7 +47,7 @@ apps/
       prisma/                 ← PrismaService (Postgres driver adapter)
       modules/
         auth/                 ← register, login, refresh rotation, logout, me
-        users/                ← admin user management
+        users/                ← admin user management (team, vendor logins, customers)
         catalog/              ← categories, products, variants
         inventory/            ← locations, batches, FIFO allocation, adjustments, expiry
         orders/               ← placement, pricing, status machine
@@ -171,7 +171,8 @@ implemented. To add Razorpay:
 - [x] Auth + RBAC, catalog, batch inventory, orders with stock reservation, COD
 - [x] Storefront: catalog, product SEO, cart, checkout, order history
 - [x] ERP: dashboard, order processing, stock and expiry, PO workflow, vendors
-- [ ] ERP forms: create/edit products and categories, create purchase orders, manage users
+- [x] ERP user management: add team and vendor logins, edit roles, reset passwords, deactivate
+- [ ] ERP forms: create/edit products and categories, create purchase orders
 - [ ] Online payments (Razorpay) + webhook + unpaid-order expiry job
 - [ ] Image upload (S3/R2 presigned URLs)
 - [ ] Order notifications (SMS/WhatsApp) via BullMQ on Redis

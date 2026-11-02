@@ -22,6 +22,14 @@ export interface AuthUser {
   vendorId: string | null;
 }
 
+/** A user as admins see them in the ERP's user management. */
+export interface ManagedUser extends AuthUser {
+  isActive: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  vendor: { id: string; name: string } | null;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
