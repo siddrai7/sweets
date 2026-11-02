@@ -38,7 +38,7 @@ export default function OurStoryPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-saffron-600">
               Since {site.established}
             </p>
-            <h1 className="mt-3 text-4xl font-semibold leading-tight sm:text-6xl">
+            <h1 className="mt-3 text-[2.6rem] font-light leading-[1.02] sm:text-7xl">
               Happiness, one sweet at a time
             </h1>
             <div className="mt-6 space-y-4 text-lg leading-relaxed text-cocoa-soft">
@@ -62,10 +62,10 @@ export default function OurStoryPage() {
         </section>
       </div>
 
-      <Promises />
+      <Promises showLink={false} />
 
       <section className="container-page py-12">
-        <h2 className="text-center text-3xl font-semibold sm:text-4xl">Our journey</h2>
+        <h2 className="text-center text-3xl font-light sm:text-5xl">Our journey</h2>
         <ol className="relative mx-auto mt-10 max-w-2xl border-l-2 border-brand-200 pl-8">
           {milestones.map((m) => (
             <li key={m.year} className="relative pb-10 last:pb-0">
@@ -78,7 +78,7 @@ export default function OurStoryPage() {
       </section>
 
       <section className="container-page py-8 text-center">
-        <h2 className="text-3xl font-semibold">Taste the tradition</h2>
+        <h2 className="text-3xl font-light sm:text-4xl">Taste the tradition</h2>
         <Link href="/shop" className="btn-primary mt-6">
           Shop our sweets
         </Link>

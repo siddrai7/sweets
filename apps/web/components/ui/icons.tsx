@@ -151,6 +151,121 @@ export const FacebookIcon = (p: IconProps) => (
   </svg>
 );
 
+export const HomeIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1v-9.5Z" />
+  </svg>
+);
+export const GridIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="4" y="4" width="7" height="7" rx="2" />
+    <rect x="13" y="4" width="7" height="7" rx="2" />
+    <rect x="4" y="13" width="7" height="7" rx="2" />
+    <rect x="13" y="13" width="7" height="7" rx="2" />
+  </svg>
+);
+export const ReceiptIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+    <path d="M9 8h6M9 12h6" />
+  </svg>
+);
+export const ArrowRight = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+export const ArrowLeft = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </svg>
+);
+export const CheckIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </svg>
+);
+export const GiftIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3.5" y="8" width="17" height="4" rx="1" />
+    <path d="M5 12v8h14v-8M12 8v12M12 8S10.5 4 8 4a2 2 0 0 0 0 4h4Zm0 0s1.5-4 4-4a2 2 0 0 1 0 4h-4Z" />
+  </svg>
+);
+export const SparkleIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 3c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7Z" />
+    <path d="M19 15c.2 1.6.9 2.3 2.5 2.5-1.6.2-2.3.9-2.5 2.5-.2-1.6-.9-2.3-2.5-2.5 1.6-.2 2.3-.9 2.5-2.5Z" />
+  </svg>
+);
+export const SlidersIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="10" cy="17" r="2" />
+  </svg>
+);
+export const SortIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M7 4v16M3.5 16.5 7 20l3.5-3.5M17 20V4M13.5 7.5 17 4l3.5 3.5" />
+  </svg>
+);
+export const BoltIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z" />
+  </svg>
+);
+export const StoreIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 9.5 5.5 4h13L20 9.5M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0M5 12v8h14v-8M10 20v-5h4v5" />
+  </svg>
+);
+export const CashIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="6" width="18" height="12" rx="2" />
+    <circle cx="12" cy="12" r="2.5" />
+    <path d="M6.5 9.5v.01M17.5 14.5v.01" />
+  </svg>
+);
+export const CardIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="5.5" width="18" height="13" rx="2" />
+    <path d="M3 10h18M7 15h3" />
+  </svg>
+);
+export const LockIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="5" y="10.5" width="14" height="10" rx="2" />
+    <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+  </svg>
+);
+export const HistoryIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5" />
+    <path d="M3.5 4v4.5H8M12 8v4l2.5 2" />
+  </svg>
+);
+export const TrendIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="m3.5 16.5 6-6 4 4 7-7M15 7.5h5.5V13" />
+  </svg>
+);
+export const StarIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6L12 16.8 6.6 19.6l1.1-6L3.2 9.4l6.1-.8L12 3Z" />
+  </svg>
+);
+export const LogoutIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10" />
+  </svg>
+);
+export const WhatsAppIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 20.5 5.3 16A8.5 8.5 0 1 1 8.4 19L4 20.5Z" />
+    <path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.5-2-1-1 .8a5 5 0 0 1-2.8-2.8l.8-1-1-2-1.5 1Z" />
+  </svg>
+);
+
 /** Indian food-safety veg mark: green dot in a green square. */
 export function VegMark({ size = 14 }: { size?: number }) {
   return (

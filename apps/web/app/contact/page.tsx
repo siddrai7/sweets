@@ -33,7 +33,9 @@ export default function ContactPage() {
       <Breadcrumbs items={[{ label: 'Contact', href: '/contact' }]} />
       <div className="mt-8 grid gap-12 lg:grid-cols-[1fr_1.3fr]">
         <div>
-          <h1 className="text-4xl font-semibold sm:text-5xl">We&apos;d love to hear from you</h1>
+          <h1 className="text-4xl font-light leading-[1.05] sm:text-6xl">
+            We&apos;d love to hear from you
+          </h1>
           <p className="mt-4 text-lg text-cocoa-soft">
             Questions about an order, planning a wedding or festive gifting, or just want to say
             hello? Drop us a message.
@@ -59,7 +61,7 @@ export default function ContactPage() {
           </ul>
         </div>
         <div className="rounded-3xl border border-brand-200 bg-white p-6 sm:p-10">
-          <h2 className="mb-6 text-2xl font-semibold">Send us a message</h2>
+          <h2 className="mb-6 text-2xl font-normal">Send us a message</h2>
           <ContactForm />
         </div>
       </div>

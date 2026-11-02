@@ -23,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: p.updatedAt,
       priority: 0.8,
     })),
+    { url: `${site.url}/categories`, changeFrequency: 'daily', priority: 0.7 },
     { url: `${site.url}/our-story`, priority: 0.5 },
     { url: `${site.url}/contact`, priority: 0.5 },
     ...Object.keys(policies).map((slug) => ({

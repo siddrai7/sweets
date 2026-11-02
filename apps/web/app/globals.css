@@ -3,36 +3,55 @@
 /*
  * Design tokens. Swap these values for the client's brand colours; every component
  * uses the token names, never raw hex values.
+ *
+ * Direction: ivory paper, deep wine, gold-leaf accents. Quiet surfaces, hairline borders,
+ * one strong colour for actions.
  */
 @theme {
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-heading), Georgia, serif;
 
-  /* Primary: deep maroon. 50/100/200 double as the cream and sand surfaces. */
-  --color-brand-50: #fbf7f0;
-  --color-brand-100: #f4ebdc;
-  --color-brand-200: #e8d9bf;
-  --color-brand-300: #d4b98f;
-  --color-brand-500: #a8292d;
-  --color-brand-600: #8e1b1f;
-  --color-brand-700: #721519;
-  --color-brand-900: #3e0b0d;
+  /* Primary: deep wine. 50–300 double as the ivory, sand and hairline surfaces. */
+  --color-brand-50: #faf6ef;
+  --color-brand-100: #f3ece0;
+  --color-brand-200: #e8dece;
+  --color-brand-300: #d3c1a6;
+  --color-brand-400: #b4654f;
+  --color-brand-500: #9a2a35;
+  --color-brand-600: #7d1b28;
+  --color-brand-700: #65131f;
+  --color-brand-800: #4b0e18;
+  --color-brand-900: #2d0a10;
 
-  /* Accent: saffron gold. */
-  --color-saffron-100: #fbefd5;
-  --color-saffron-400: #e9b450;
-  --color-saffron-500: #d9962b;
-  --color-saffron-600: #b97a17;
+  /* Accent: gold leaf and saffron. */
+  --color-saffron-50: #fcf7ea;
+  --color-saffron-100: #f8edd3;
+  --color-saffron-300: #e8c987;
+  --color-saffron-400: #d9ae5b;
+  --color-saffron-500: #c4943a;
+  --color-saffron-600: #9e7428;
 
-  --color-pista-100: #edf2e1;
-  --color-pista-600: #5d7a34;
+  /* Pistachio: success, savings and "fresh" signals. */
+  --color-pista-50: #f1f5ea;
+  --color-pista-100: #e3ecd5;
+  --color-pista-500: #4f7c3a;
+  --color-pista-600: #3f6630;
+  --color-pista-700: #2f4f24;
 
   /* Text. */
-  --color-cocoa: #2b1d14;
-  --color-cocoa-soft: #6b5546;
+  --color-cocoa: #1f1612;
+  --color-cocoa-soft: #6f5f55;
+
+  --shadow-card: 0 1px 2px rgb(45 10 16 / 0.04), 0 8px 24px -12px rgb(45 10 16 / 0.12);
+  --shadow-float: 0 12px 40px -12px rgb(45 10 16 / 0.35);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
   --animate-fade-in: fade-in 0.2s ease-out;
-  --animate-slide-in: slide-in 0.25s ease-out;
+  --animate-slide-in: slide-in 0.35s var(--ease-out-soft);
+  --animate-slide-up: slide-up 0.35s var(--ease-out-soft);
+  --animate-rise: rise 0.5s var(--ease-out-soft) both;
+  --animate-pop: pop 0.35s var(--ease-out-soft);
 
   @keyframes fade-in {
     from {
@@ -50,24 +69,81 @@
       transform: translateX(0);
     }
   }
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(1.06);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+}
+
+/* Height of the sticky header, so sticky toolbars below it line up. */
+:root {
+  --header-h: 64px;
+}
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 76px;
+  }
 }
 
 @layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     @apply bg-brand-50 font-sans text-cocoa antialiased;
+    font-feature-settings: 'ss01', 'cv11';
   }
   h1,
   h2,
   h3 {
     @apply font-display tracking-tight;
+    font-variation-settings:
+      'SOFT' 50,
+      'WONK' 0;
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-brand-600;
   }
+  ::selection {
+    @apply bg-saffron-300 text-cocoa;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @utility container-page {
-  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  @apply mx-auto w-full max-w-[84rem] px-4 sm:px-6 lg:px-10;
 }
 
 @utility no-scrollbar {
@@ -77,14 +153,48 @@
   }
 }
 
+/* Small uppercase label above headings. */
+@utility eyebrow {
+  @apply text-[0.68rem] font-bold uppercase tracking-[0.28em] text-saffron-600;
+}
+
 @utility btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
 }
 
 @utility btn-outline {
-  @apply inline-flex items-center justify-center gap-2 rounded-full border border-brand-600 px-6 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-brand-600 px-6 py-3 text-sm font-semibold text-brand-600 transition duration-200 hover:bg-brand-600 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-brand-200 bg-white px-5 py-2.5 text-sm font-semibold text-cocoa transition duration-200 hover:border-cocoa/30 active:scale-[0.98];
+}
+
+/* Filter / category pill. Add `chip-active` for the selected state. */
+@utility chip {
+  @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-[0.8rem] font-semibold text-cocoa transition hover:border-cocoa/30;
+}
+@utility chip-active {
+  @apply border-cocoa bg-cocoa text-white hover:border-cocoa;
+}
+
+@utility card {
+  @apply rounded-2xl border border-brand-200 bg-white;
 }
 
 @utility input-field {
-  @apply w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm placeholder:text-cocoa-soft/60 focus:border-brand-600 focus:outline-none;
+  @apply w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm transition placeholder:text-cocoa-soft/60 focus:border-cocoa focus:ring-4 focus:ring-brand-100 focus:outline-none;
+}
+
+/* Fine gold rule used as a section ornament. */
+@utility rule-gold {
+  @apply h-px bg-gradient-to-r from-transparent via-saffron-400 to-transparent;
+}
+
+/* Space reserved under the page on mobile for the bottom navigation bar. */
+@utility pb-mobile-nav {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  @media (min-width: 1024px) {
+    padding-bottom: 0;
+  }
 }

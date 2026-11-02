@@ -5,7 +5,7 @@ import { ProductCarousel } from '@/components/product/product-carousel';
 import { ProductGallery } from '@/components/product/product-gallery';
 import { ProductPurchase } from '@/components/product/product-purchase';
 import { Breadcrumbs } from '@/components/shop/breadcrumbs';
-import { ShieldIcon, SunIcon, TruckIcon, VegMark } from '@/components/ui/icons';
+import { DropIcon, LeafIcon, ShieldIcon, SunIcon, VegMark } from '@/components/ui/icons';
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
 import { categoryTrail } from '@/lib/categories';
 import { site } from '@/lib/site';
@@ -78,8 +78,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   };
 
   const details = [
-    { title: 'Description', body: product.description, open: true },
-    { title: 'Ingredients', body: product.ingredients },
+    { title: 'Ingredients', body: product.ingredients, open: true },
     { title: 'Allergen information', body: product.allergens },
     {
       title: 'Shelf life & storage',
@@ -103,7 +102,7 @@ export default async function ProductPage({ params }: { params: Params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
-      <div className="container-page py-8">
+      <div className="container-page pb-6 pt-4 sm:pt-8">
         <Breadcrumbs
           items={[
             { label: 'Shop', href: '/shop' },
@@ -112,57 +111,77 @@ export default async function ProductPage({ params }: { params: Params }) {
           ]}
         />
 
-        <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-14">
-          <div className="lg:sticky lg:top-28 lg:self-start">
-            <ProductGallery name={product.name} slug={product.slug} images={product.images} />
+        <div className="mt-5 grid gap-8 lg:mt-8 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+          <div className="lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:self-start">
+            <ProductGallery
+              name={product.name}
+              slug={product.slug}
+              images={product.images}
+              badge={
+                product.tags.includes('bestseller') ? (
+                  <span className="rounded-full bg-white/90 px-3 py-1.5 text-[0.65rem] font-extrabold uppercase tracking-[0.18em] text-saffron-600 shadow-card backdrop-blur">
+                    ★ Bestseller
+                  </span>
+                ) : undefined
+              }
+            />
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-saffron-600">
-              {product.category?.name}
-            </p>
-            <h1 className="mt-2 text-4xl font-semibold leading-tight sm:text-5xl">
+            <p className="eyebrow">{product.category?.name}</p>
+            <h1 className="mt-3 text-[2.4rem] font-light leading-[1.02] tracking-[-0.01em] sm:text-6xl">
               {product.name}
             </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-cocoa-soft">
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-semibold">
               {product.isVeg && (
-                <span className="flex items-center gap-1.5">
-                  <VegMark /> Pure vegetarian
+                <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 ring-1 ring-brand-200">
+                  <VegMark size={12} /> Pure vegetarian
                 </span>
               )}
-              {product.tags.includes('bestseller') && (
-                <span className="rounded-full bg-saffron-100 px-2.5 py-0.5 font-semibold text-saffron-600">
-                  Bestseller
+              {product.shelfLifeDays && (
+                <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-brand-200">
+                  Stays fresh {product.shelfLifeDays} day{product.shelfLifeDays > 1 ? 's' : ''}
                 </span>
               )}
+              <span className="rounded-full bg-pista-50 px-3 py-1.5 text-pista-600 ring-1 ring-pista-100">
+                Made today
+              </span>
             </div>
+            {product.description && (
+              <p className="mt-5 max-w-xl leading-relaxed text-cocoa-soft">{product.description}</p>
+            )}
 
-            <div className="mt-8">
+            <div className="mt-8 border-t border-brand-200 pt-7">
               <ProductPurchase product={product} />
             </div>
 
-            <ul className="mt-8 grid grid-cols-3 gap-3 rounded-2xl bg-brand-100 p-4 text-center text-xs font-medium sm:text-sm">
-              <li className="flex flex-col items-center gap-1.5">
-                <SunIcon className="text-saffron-600" /> Made fresh today
-              </li>
-              <li className="flex flex-col items-center gap-1.5">
-                <ShieldIcon className="text-saffron-600" /> Hygienically packed
-              </li>
-              <li className="flex flex-col items-center gap-1.5">
-                <TruckIcon className="text-saffron-600" /> Same-day delivery
-              </li>
+            <ul className="mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {[
+                { icon: SunIcon, label: 'Made fresh at dawn' },
+                { icon: DropIcon, label: 'Pure desi ghee' },
+                { icon: LeafIcon, label: 'No preservatives' },
+                { icon: ShieldIcon, label: 'Hygienically packed' },
+              ].map(({ icon: Icon, label }) => (
+                <li
+                  key={label}
+                  className="flex flex-col items-center gap-2 rounded-2xl bg-brand-100/70 px-2 py-4 text-center text-xs font-semibold"
+                >
+                  <Icon size={20} className="text-saffron-600" />
+                  {label}
+                </li>
+              ))}
             </ul>
 
             <div className="mt-8 divide-y divide-brand-200 border-y border-brand-200">
               {details.map((d) => (
-                <details key={d.title} open={d.open} className="group py-4">
-                  <summary className="flex cursor-pointer list-none items-center justify-between font-semibold">
+                <details key={d.title} open={d.open} className="group py-1">
+                  <summary className="flex cursor-pointer list-none items-center justify-between py-4 font-display text-lg">
                     {d.title}
-                    <span className="text-xl text-brand-600 transition group-open:rotate-45">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full ring-1 ring-brand-300 transition group-open:rotate-45">
                       +
                     </span>
                   </summary>
-                  <p className="mt-3 leading-relaxed text-cocoa-soft">{d.body}</p>
+                  <p className="pb-5 text-[0.95rem] leading-relaxed text-cocoa-soft">{d.body}</p>
                 </details>
               ))}
             </div>
@@ -171,6 +190,7 @@ export default async function ProductPage({ params }: { params: Params }) {
       </div>
 
       <ProductCarousel
+        eyebrow="Pairs well with"
         title="You may also like"
         products={related?.items ?? []}
         viewAllHref={product.category ? `/shop/${product.category.slug}` : undefined}

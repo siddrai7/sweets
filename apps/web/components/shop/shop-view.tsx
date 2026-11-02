@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import type { Category, ProductQuery } from '@sweets/types';
+import { SweetArt } from '@/components/art/sweet-art';
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
+import { artFor } from '@/lib/art';
 import { buildCategoryTree, categoryTrail } from '@/lib/categories';
+import { PRICE_BANDS } from '@/lib/price-bands';
 import { Breadcrumbs, type Crumb } from './breadcrumbs';
 import { ProductGrid } from './product-grid';
-import { PRICE_BANDS } from '@/lib/price-bands';
-import { Filters, SortSelect } from './shop-controls';
+import { ActiveFilters, Filters, MobileControls, SortSelect } from './shop-controls';
 
 export type ShopSearchParams = {
   sort?: string;
@@ -69,47 +71,105 @@ export async function ShopView({
     searchParams.tag && COLLECTION_TITLES[searchParams.tag]
       ? COLLECTION_TITLES[searchParams.tag]!
       : title;
+  const chips = parent
+    ? [
+        { id: parent.id, slug: parent.slug, label: 'All' },
+        ...parent.children.map((c) => ({ id: c.id, slug: c.slug, label: c.name })),
+      ]
+    : [
+        { id: 'all', slug: '', label: 'All' },
+        ...tree.map((c) => ({ id: c.id, slug: c.slug, label: c.name })),
+      ];
+  const activeChip = category?.id ?? (searchParams.q ? undefined : 'all');
+  const art = artFor(category?.slug ?? searchParams.tag ?? 'assorted', heading);
 
   return (
-    <div className="container-page py-8">
-      <Breadcrumbs items={crumbs ?? [{ label: heading, href: '/shop' }]} />
-
-      <header className="mt-6 max-w-3xl">
-        <h1 className="text-4xl font-semibold sm:text-5xl">{heading}</h1>
-        {description && <p className="mt-3 text-lg text-cocoa-soft">{description}</p>}
-      </header>
-
-      <nav
-        className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0"
-        aria-label="Categories"
+    <div className="pb-6">
+      {/* Title band */}
+      <div
+        className="relative overflow-hidden border-b border-brand-200/70"
+        style={{ backgroundColor: art.tone.bg }}
       >
-        {(parent
-          ? [
-              { ...parent, label: `All ${parent.name}` },
-              ...parent.children.map((c) => ({ ...c, label: c.name })),
-            ]
-          : tree.map((c) => ({ ...c, label: c.name }))
-        ).map((c) => {
-          const active = c.id === category?.id;
-          return (
-            <Link
-              key={c.id}
-              href={`/shop/${c.slug}`}
-              className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                active
-                  ? 'border-brand-600 bg-brand-600 text-white'
-                  : 'border-brand-200 bg-white hover:border-brand-600'
-              }`}
-            >
-              {c.label}
-            </Link>
-          );
-        })}
-      </nav>
+        <div className="container-page relative py-6 sm:py-10">
+          <Breadcrumbs items={crumbs ?? [{ label: heading, href: '/shop' }]} />
+          <div className="mt-4 max-w-2xl pr-24 sm:pr-0">
+            <h1 className="text-[2.1rem] font-light leading-[1.05] sm:text-6xl">{heading}</h1>
+            {description && (
+              <p className="mt-3 text-sm text-cocoa-soft sm:text-lg">{description}</p>
+            )}
+            <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-cocoa-soft">
+              {initial.total} {initial.total === 1 ? 'product' : 'products'}
+            </p>
+          </div>
+          <SweetArt
+            spec={art}
+            background={false}
+            className="pointer-events-none absolute -bottom-6 right-0 h-36 w-36 sm:right-10 sm:h-60 sm:w-60"
+          />
+        </div>
+      </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[220px_1fr]">
+      {/* Sticky category chips + phone controls */}
+      <div className="sticky top-[var(--header-h)] z-30 border-b border-brand-200/70 bg-brand-50/90 backdrop-blur-xl">
+        <div className="container-page space-y-2.5 py-3">
+          <nav
+            className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4"
+            aria-label="Categories"
+          >
+            {chips.map((c) => (
+              <Link
+                key={c.id}
+                href={c.slug ? `/shop/${c.slug}` : '/shop'}
+                className={`chip ${c.id === activeChip ? 'chip-active' : ''}`}
+                aria-current={c.id === activeChip ? 'page' : undefined}
+              >
+                {c.label}
+              </Link>
+            ))}
+          </nav>
+          <Suspense>
+            <MobileControls />
+          </Suspense>
+        </div>
+      </div>
+
+      <div className="container-page mt-6 grid gap-10 lg:grid-cols-[240px_1fr]">
         <aside className="hidden lg:block">
-          <div className="sticky top-28">
+          <div className="sticky top-[calc(var(--header-h)+5rem)] space-y-8">
+            <nav aria-label="All categories">
+              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-cocoa-soft">
+                Categories
+              </p>
+              <ul className="space-y-0.5 text-sm">
+                {tree.map((c) => {
+                  const open = trail[0]?.id === c.id;
+                  return (
+                    <li key={c.id}>
+                      <Link
+                        href={`/shop/${c.slug}`}
+                        className={`block rounded-xl px-3 py-2 font-semibold transition hover:bg-brand-100 ${category?.id === c.id ? 'bg-white text-brand-600 ring-1 ring-brand-200' : ''}`}
+                      >
+                        {c.name}
+                      </Link>
+                      {open && c.children.length > 0 && (
+                        <ul className="mb-2 ml-3 mt-1 space-y-0.5 border-l border-brand-200 pl-3">
+                          {c.children.map((s) => (
+                            <li key={s.id}>
+                              <Link
+                                href={`/shop/${s.slug}`}
+                                className={`block rounded-lg px-2.5 py-1.5 transition hover:text-brand-600 ${category?.id === s.id ? 'font-bold text-brand-600' : 'text-cocoa-soft'}`}
+                              >
+                                {s.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
             <Suspense>
               <Filters />
             </Suspense>
@@ -117,22 +177,17 @@ export async function ShopView({
         </aside>
 
         <div>
-          <div className="mb-5 flex items-center justify-between gap-3 border-b border-brand-200 pb-4">
-            <details className="relative lg:hidden">
-              <summary className="cursor-pointer list-none rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium">
-                Filters
-              </summary>
-              <div className="absolute left-0 z-20 mt-2 w-64 rounded-2xl border border-brand-200 bg-white p-5 shadow-lg">
-                <Suspense>
-                  <Filters />
-                </Suspense>
-              </div>
-            </details>
-            <p className="hidden text-sm text-cocoa-soft lg:block">{initial.total} products</p>
+          <div className="mb-4 hidden items-center justify-between gap-3 lg:flex">
+            <p className="text-sm text-cocoa-soft">
+              <span className="font-bold text-cocoa">{initial.total}</span> products
+            </p>
             <Suspense>
               <SortSelect />
             </Suspense>
           </div>
+          <Suspense>
+            <ActiveFilters />
+          </Suspense>
           <ProductGrid initial={initial} query={query} />
         </div>
       </div>

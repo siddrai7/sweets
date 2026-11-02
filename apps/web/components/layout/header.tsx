@@ -1,95 +1,148 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { BoltIcon, ChevronDown } from '@/components/ui/icons';
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
 import { buildCategoryTree } from '@/lib/categories';
 import { site } from '@/lib/site';
-import { HeaderActions, MobileMenu } from './header-client';
+import { AccountLink, Announcements, CartButton, CartIconButton } from './header-client';
+import { Logo } from './logo';
+import { SearchBox } from './search-box';
 
 const PAGES = [
-  { href: '/our-story', label: 'Our Story' },
+  { href: '/our-story', label: 'Our story' },
   { href: '/contact', label: 'Contact' },
 ];
+
+function DeliveryBadge({ className = '' }: { className?: string }) {
+  return (
+    <Link
+      href="/policies/shipping"
+      className={`group flex items-center gap-2.5 rounded-2xl transition ${className}`}
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-saffron-100 text-saffron-600">
+        <BoltIcon size={18} />
+      </span>
+      <span className="flex flex-col leading-tight">
+        <span className="text-sm font-extrabold tracking-tight">
+          Delivery in {site.delivery.eta}
+        </span>
+        <span className="flex items-center gap-0.5 text-[0.72rem] text-cocoa-soft">
+          {site.delivery.area}
+          <ChevronDown size={12} className="transition group-hover:translate-y-0.5" />
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+const searchFallback = (
+  <div className="h-12 w-full rounded-2xl border border-brand-200 bg-white" aria-hidden />
+);
 
 export async function Header() {
   const tree = buildCategoryTree(await safe(serverApi.catalog.categories(CATALOG_REVALIDATE), []));
 
   return (
     <>
-      <div className="bg-brand-700 px-4 py-2 text-center text-xs font-medium tracking-wide text-brand-50 sm:text-sm">
-        {site.announcement}
+      <div className="bg-brand-900 px-4 py-2 text-center text-[0.72rem] font-semibold tracking-wide text-saffron-100 sm:text-xs">
+        <Announcements items={site.announcements} />
       </div>
-      <header className="sticky top-0 z-40 border-b border-brand-200 bg-brand-50/95 backdrop-blur">
-        <div className="container-page flex h-16 items-center gap-4 lg:h-20">
-          <MobileMenu tree={tree} pages={PAGES} />
 
-          <Link href="/" className="flex flex-col leading-none">
-            <span className="font-display text-2xl font-semibold text-brand-600 lg:text-[1.7rem]">
-              {site.name}
-            </span>
-            <span className="text-[0.6rem] font-semibold uppercase tracking-[0.25em] text-saffron-600">
-              Estd. {site.established}
-            </span>
-          </Link>
+      {/* Phones: brand + delivery promise; scrolls away so only search stays pinned. */}
+      <div className="container-page flex items-center justify-between gap-3 bg-brand-50 pb-1 pt-3 lg:hidden">
+        <Logo compact />
+        <div className="flex items-center">
+          <AccountLink variant="icon" />
+          <CartIconButton />
+        </div>
+      </div>
+      <div className="container-page pb-2 lg:hidden">
+        <DeliveryBadge className="py-1" />
+      </div>
 
-          <nav className="ml-10 hidden h-full items-center gap-1 lg:flex" aria-label="Main">
-            <Link
-              href="/"
-              className="rounded-full px-4 py-2 text-sm font-medium hover:text-brand-600"
-            >
-              Home
-            </Link>
-
-            {/* Mega menu: pure CSS hover/focus, so it works before JS loads. */}
-            <div className="group flex h-full items-center">
-              <Link
-                href="/shop"
-                className="rounded-full px-4 py-2 text-sm font-medium group-hover:text-brand-600"
-              >
-                Shop
-              </Link>
-              <div className="invisible absolute inset-x-0 top-full border-b border-brand-200 bg-white opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                <div className="container-page grid grid-cols-5 gap-8 py-8">
-                  {tree.map((cat) => (
-                    <div key={cat.id}>
-                      <Link
-                        href={`/shop/${cat.slug}`}
-                        className="font-display text-lg font-semibold text-brand-600 hover:underline"
-                      >
-                        {cat.name}
-                      </Link>
-                      {cat.children.length > 0 && (
-                        <ul className="mt-3 space-y-2">
-                          {cat.children.map((sub) => (
-                            <li key={sub.id}>
-                              <Link
-                                href={`/shop/${sub.slug}`}
-                                className="text-sm text-cocoa-soft hover:text-brand-600"
-                              >
-                                {sub.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {PAGES.map((p) => (
-              <Link
-                key={p.href}
-                href={p.href}
-                className="rounded-full px-4 py-2 text-sm font-medium hover:text-brand-600"
-              >
-                {p.label}
-              </Link>
-            ))}
-          </nav>
-
-          <HeaderActions />
+      <header className="sticky top-0 z-40 border-b border-brand-200/80 bg-brand-50 lg:bg-brand-50/85 lg:backdrop-blur-xl">
+        <div className="container-page flex h-[var(--header-h)] items-center gap-6">
+          <div className="hidden shrink-0 lg:block">
+            <Logo />
+          </div>
+          <DeliveryBadge className="hidden shrink-0 border-l border-brand-200 pl-6 xl:flex" />
+          <div className="min-w-0 flex-1 lg:mx-auto lg:max-w-2xl">
+            <Suspense fallback={searchFallback}>
+              <SearchBox />
+            </Suspense>
+          </div>
+          <div className="hidden shrink-0 items-center gap-2 lg:flex">
+            <AccountLink />
+            <CartButton />
+          </div>
         </div>
       </header>
+
+      {/* Desktop category bar with hover menus. Pure CSS, so it works before JS loads. */}
+      <nav
+        aria-label="Categories"
+        className="hidden border-b border-brand-200/80 bg-brand-50 lg:block"
+      >
+        <div className="container-page flex h-12 items-center gap-1 text-[0.85rem] font-semibold">
+          <Link href="/shop" className="rounded-full px-3 py-1.5 transition hover:bg-brand-100">
+            All products
+          </Link>
+          {tree.map((cat) => (
+            <div key={cat.id} className="group relative">
+              <Link
+                href={`/shop/${cat.slug}`}
+                className="flex items-center gap-1 rounded-full px-3 py-1.5 transition group-hover:bg-brand-100"
+              >
+                {cat.name}
+                {cat.children.length > 0 && (
+                  <ChevronDown
+                    size={14}
+                    className="text-cocoa-soft transition group-hover:rotate-180"
+                  />
+                )}
+              </Link>
+              {cat.children.length > 0 && (
+                <div className="invisible absolute left-0 top-full z-30 pt-2 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                  <ul className="min-w-56 rounded-2xl border border-brand-200 bg-white p-2 shadow-float">
+                    {cat.children.map((sub) => (
+                      <li key={sub.id}>
+                        <Link
+                          href={`/shop/${sub.slug}`}
+                          className="block rounded-xl px-3.5 py-2.5 font-medium transition hover:bg-brand-50 hover:text-brand-600"
+                        >
+                          {sub.name}
+                        </Link>
+                      </li>
+                    ))}
+                    <li className="mt-1 border-t border-brand-100 pt-1">
+                      <Link
+                        href={`/shop/${cat.slug}`}
+                        className="block rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider text-brand-600 hover:bg-brand-50"
+                      >
+                        Shop all {cat.name} →
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
+          <span className="mx-2 h-4 w-px bg-brand-200" />
+          {PAGES.map((p) => (
+            <Link
+              key={p.href}
+              href={p.href}
+              className="rounded-full px-3 py-1.5 text-cocoa-soft transition hover:bg-brand-100 hover:text-cocoa"
+            >
+              {p.label}
+            </Link>
+          ))}
+          <p className="ml-auto text-xs font-medium text-cocoa-soft">
+            Order before {site.delivery.sameDayCutoff} for{' '}
+            <span className="font-bold text-cocoa">same-day delivery</span>
+          </p>
+        </div>
+      </nav>
     </>
   );
 }
