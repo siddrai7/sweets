@@ -13,6 +13,7 @@ import {
   type UserQuery,
 } from '@sweets/types';
 import { pageArgs, paginated } from '../../common/utils/pagination';
+import { withUniqueMessages } from '../../common/utils/prisma-errors';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
@@ -29,6 +30,11 @@ const select = {
   lastLoginAt: true,
   createdAt: true,
 } satisfies Prisma.UserSelect;
+
+const USER_UNIQUE = {
+  email: 'An account with this email already exists',
+  phone: 'An account with this phone number already exists',
+};
 
 type Row = Prisma.UserGetPayload<{ select: typeof select }>;
 
@@ -81,13 +87,15 @@ export class UsersService {
     await this.assertUnique(email, phone);
     const vendorId = input.role === 'VENDOR' ? await this.assertVendor(input.vendorId) : null;
 
-    const user = await this.unique(() =>
-      this.auth.hashPassword(input.password).then((passwordHash) =>
-        this.prisma.user.create({
-          data: { name: input.name, email, phone, role: input.role, vendorId, passwordHash },
-          select,
-        }),
-      ),
+    const user = await withUniqueMessages(
+      () =>
+        this.auth.hashPassword(input.password).then((passwordHash) =>
+          this.prisma.user.create({
+            data: { name: input.name, email, phone, role: input.role, vendorId, passwordHash },
+            select,
+          }),
+        ),
+      USER_UNIQUE,
     );
     return toDto(user);
   }
@@ -113,12 +121,14 @@ export class UsersService {
     const phone = input.phone === undefined ? undefined : input.phone || null;
     if (phone && phone !== current.phone) await this.assertUnique(undefined, phone, id);
 
-    const user = await this.unique(() =>
-      this.prisma.user.update({
-        where: { id },
-        data: { name: input.name, phone, role, vendorId },
-        select,
-      }),
+    const user = await withUniqueMessages(
+      () =>
+        this.prisma.user.update({
+          where: { id },
+          data: { name: input.name, phone, role, vendorId },
+          select,
+        }),
+      USER_UNIQUE,
     );
 
     // Permissions live in the access token; force a fresh sign-in when they change.
@@ -180,17 +190,6 @@ export class UsersService {
           ? 'An account with this email already exists'
           : 'An account with this phone number already exists',
       );
-    }
-  }
-
-  private async unique<T>(fn: () => Promise<T>): Promise<T> {
-    try {
-      return await fn();
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        throw new ConflictException('An account with this email or phone already exists');
-      }
-      throw e;
     }
   }
 }

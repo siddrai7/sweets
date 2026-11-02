@@ -20,6 +20,14 @@ const envSchema = z.object({
   CURRENCY: z.string().length(3).default('INR'),
   DELIVERY_FEE: z.coerce.number().min(0).default(49),
   FREE_DELIVERY_ABOVE: z.coerce.number().min(0).default(999),
+  /**
+   * Storefront endpoint to call after catalog edits (e.g. https://shop.example.com/api/revalidate)
+   * so changes show immediately. Without it the shop catches up within a minute, except that
+   * archived products can linger until the next deploy.
+   */
+  STOREFRONT_REVALIDATE_URL: z.url().optional(),
+  /** Shared with the storefront's REVALIDATE_SECRET. */
+  REVALIDATE_SECRET: z.string().min(16).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

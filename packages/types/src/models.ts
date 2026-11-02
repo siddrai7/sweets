@@ -50,6 +50,8 @@ export interface Category {
   parentId: string | null;
   sortOrder: number;
   isActive: boolean;
+  /** Products directly in this category. Only returned to staff. */
+  productCount?: number;
 }
 
 export interface ProductVariant {
@@ -61,6 +63,8 @@ export interface ProductVariant {
   mrp: string | null;
   isActive: boolean;
   sortOrder: number;
+  /** Low-stock alert level shown in the ERP. */
+  lowStockThreshold?: number;
   /** Units currently sellable (sum of unexpired batches). Present on catalog reads. */
   available?: number;
 }

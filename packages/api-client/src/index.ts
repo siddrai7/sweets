@@ -5,6 +5,7 @@ import type {
   AuthUser,
   Category,
   CategoryInput,
+  CategoryUpdateInput,
   ContactMessageInput,
   CreateUserInput,
   DashboardStats,
@@ -110,6 +111,7 @@ export function createApiClient(options: ApiClientOptions) {
     request<T>('GET', path, { query, init });
   const post = <T>(path: string, body?: unknown) => request<T>('POST', path, { body });
   const patch = <T>(path: string, body?: unknown) => request<T>('PATCH', path, { body });
+  const del = <T>(path: string) => request<T>('DELETE', path);
 
   return {
     auth: {
@@ -132,6 +134,8 @@ export function createApiClient(options: ApiClientOptions) {
     catalog: {
       categories: (init?: FetchInit) => get<Category[]>('/categories', undefined, init),
       createCategory: (input: CategoryInput) => post<Category>('/categories', input),
+      updateCategory: (id: string, input: CategoryUpdateInput) =>
+        patch<Category>(`/categories/${id}`, input),
       products: (q: Partial<ProductQuery> = {}, init?: FetchInit) =>
         get<Paginated<Product>>('/products', q, init),
       product: (idOrSlug: string, init?: FetchInit) =>
@@ -139,6 +143,10 @@ export function createApiClient(options: ApiClientOptions) {
       createProduct: (input: ProductInput) => post<Product>('/products', input),
       updateProduct: (id: string, input: ProductUpdateInput) =>
         patch<Product>(`/products/${id}`, input),
+      /** Admin only. Hides the product from the shop; past orders keep it. */
+      archiveProduct: (id: string) => del<Product>(`/products/${id}`),
+      /** Admin only. */
+      restoreProduct: (id: string) => post<Product>(`/products/${id}/restore`),
     },
     orders: {
       place: (input: PlaceOrderInput) =>

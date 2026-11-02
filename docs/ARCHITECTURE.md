@@ -136,6 +136,13 @@ Structured data: `Organization` (every page), `Product` + `Offer` (product pages
 stock), `BreadcrumbList` (shop and product pages). Product and category pages set canonical URLs.
 If the API is unreachable, pages render an empty state instead of failing (`safe()` in `lib/api.ts`).
 
+**Catalog freshness.** Every catalog read carries the `catalog` cache tag. After any product or
+category write, the API (`StorefrontCacheService`) POSTs to the storefront's `/api/revalidate`
+with the shared `REVALIDATE_SECRET`, which expires the tag so the next visit renders fresh data.
+This matters for correctness, not just speed: a cached page is never replaced by a 404, so
+without it an archived product would stay visible. Configure `STOREFRONT_REVALIDATE_URL` and
+`REVALIDATE_SECRET` on the API and the same secret on the storefront.
+
 ### Where things live (`apps/web`)
 
 | What                                                    | Where                                                                 |
@@ -172,7 +179,8 @@ implemented. To add Razorpay:
 - [x] Storefront: catalog, product SEO, cart, checkout, order history
 - [x] ERP: dashboard, order processing, stock and expiry, PO workflow, vendors
 - [x] ERP user management: add team and vendor logins, edit roles, reset passwords, deactivate
-- [ ] ERP forms: create/edit products and categories, create purchase orders
+- [x] ERP catalog: create/edit products, pack sizes and prices, categories; archive/restore
+- [ ] ERP forms: create purchase orders, vendors
 - [ ] Online payments (Razorpay) + webhook + unpaid-order expiry job
 - [ ] Image upload (S3/R2 presigned URLs)
 - [ ] Order notifications (SMS/WhatsApp) via BullMQ on Redis
