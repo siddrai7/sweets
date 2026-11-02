@@ -10,3 +10,6 @@ coverage
 !.env.example
 apps/api/src/generated
 .DS_Store
+
+# Written by `next dev` on every start
+apps/*/AGENTS.md

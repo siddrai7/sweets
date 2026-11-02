@@ -5,10 +5,13 @@ import type {
   AuthUser,
   Category,
   CategoryInput,
+  CategoryUpdateInput,
   ContactMessageInput,
+  CreateUserInput,
   DashboardStats,
   Location,
   LoginInput,
+  ManagedUser,
   NewsletterInput,
   Order,
   OrderQuery,
@@ -26,6 +29,8 @@ import type {
   RegisterInput,
   StockBatch,
   StockSummaryRow,
+  UpdateUserInput,
+  UserQuery,
   Vendor,
   VendorInput,
 } from '@sweets/types';
@@ -42,16 +47,23 @@ export interface ApiClientOptions {
   fetch?: typeof fetch;
 }
 
+/** Readable message from an API error body, preferring field-level validation messages. */
+function errorMessage(status: number, body: unknown): string {
+  if (typeof body !== 'object' || !body) return `HTTP ${status}`;
+  const errors = 'errors' in body && Array.isArray(body.errors) ? body.errors : [];
+  const details = errors
+    .map((e: unknown) => (typeof e === 'object' && e && 'message' in e ? String(e.message) : ''))
+    .filter(Boolean);
+  if (details.length) return [...new Set(details)].join('. ');
+  return 'message' in body ? String(body.message) : `HTTP ${status}`;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly body: unknown,
   ) {
-    super(
-      typeof body === 'object' && body && 'message' in body
-        ? String(body.message)
-        : `HTTP ${status}`,
-    );
+    super(errorMessage(status, body));
   }
 }
 
@@ -99,6 +111,7 @@ export function createApiClient(options: ApiClientOptions) {
     request<T>('GET', path, { query, init });
   const post = <T>(path: string, body?: unknown) => request<T>('POST', path, { body });
   const patch = <T>(path: string, body?: unknown) => request<T>('PATCH', path, { body });
+  const del = <T>(path: string) => request<T>('DELETE', path);
 
   return {
     auth: {
@@ -108,9 +121,21 @@ export function createApiClient(options: ApiClientOptions) {
       logout: (refreshToken: string) => post<void>('/auth/logout', { refreshToken }),
       me: () => get<AuthUser>('/auth/me'),
     },
+    users: {
+      list: (q: Partial<UserQuery> = {}) => get<Paginated<ManagedUser>>('/users', q),
+      create: (input: CreateUserInput) => post<ManagedUser>('/users', input),
+      update: (id: string, input: UpdateUserInput) => patch<ManagedUser>(`/users/${id}`, input),
+      setActive: (id: string, isActive: boolean) =>
+        patch<ManagedUser>(`/users/${id}/active`, { isActive }),
+      /** Sets a new password and signs the user out everywhere. */
+      resetPassword: (id: string, password: string) =>
+        post<void>(`/users/${id}/password`, { password }),
+    },
     catalog: {
       categories: (init?: FetchInit) => get<Category[]>('/categories', undefined, init),
       createCategory: (input: CategoryInput) => post<Category>('/categories', input),
+      updateCategory: (id: string, input: CategoryUpdateInput) =>
+        patch<Category>(`/categories/${id}`, input),
       products: (q: Partial<ProductQuery> = {}, init?: FetchInit) =>
         get<Paginated<Product>>('/products', q, init),
       product: (idOrSlug: string, init?: FetchInit) =>
@@ -118,6 +143,10 @@ export function createApiClient(options: ApiClientOptions) {
       createProduct: (input: ProductInput) => post<Product>('/products', input),
       updateProduct: (id: string, input: ProductUpdateInput) =>
         patch<Product>(`/products/${id}`, input),
+      /** Admin only. Hides the product from the shop; past orders keep it. */
+      archiveProduct: (id: string) => del<Product>(`/products/${id}`),
+      /** Admin only. */
+      restoreProduct: (id: string) => post<Product>(`/products/${id}/restore`),
     },
     orders: {
       place: (input: PlaceOrderInput) =>

@@ -3,6 +3,7 @@ import { Fraunces, Manrope } from 'next/font/google';
 import { CartDrawer } from '@/components/layout/cart-drawer';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
+import { CartToast, MobileNav } from '@/components/layout/mobile-nav';
 import { CartProvider } from '@/lib/cart';
 import { SessionProvider } from '@/lib/session';
 import { site } from '@/lib/site';
@@ -12,7 +13,8 @@ const heading = Fraunces({
   subsets: ['latin'],
   variable: '--font-heading',
   display: 'swap',
-  axes: ['SOFT', 'opsz'],
+  style: ['normal', 'italic'],
+  axes: ['SOFT', 'WONK', 'opsz'],
 });
 const body = Manrope({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: { type: 'website', siteName: site.name, locale: 'en_IN' },
 };
 
-export const viewport: Viewport = { themeColor: '#8e1b1f' };
+export const viewport: Viewport = { themeColor: '#faf6ef' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const organization = {
@@ -49,7 +51,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />
+            <MobileNav />
             <CartDrawer />
+            <CartToast />
           </CartProvider>
         </SessionProvider>
       </body>

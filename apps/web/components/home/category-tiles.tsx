@@ -1,42 +1,59 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { SweetArt } from '@/components/art/sweet-art';
+import { SectionHeading } from '@/components/ui/section-heading';
+import { artFor } from '@/lib/art';
 import type { CategoryNode } from '@/lib/categories';
-import { ProductImage } from '@/components/product/product-image';
 
+/** Leaf categories as a dense, tappable grid, the way quick-commerce apps lay them out. */
 export function CategoryTiles({ categories }: { categories: CategoryNode[] }) {
-  if (!categories.length) return null;
+  const tiles = categories.flatMap((c) => (c.children.length ? c.children : [c]));
+  if (!tiles.length) return null;
+
   return (
-    <section className="container-page py-14">
-      <div className="mb-8 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-saffron-600">Explore</p>
-        <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">Shop by category</h2>
-      </div>
-      <div className="no-scrollbar -mx-4 flex snap-x gap-5 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-5">
-        {categories.map((c) => (
-          <Link
-            key={c.id}
-            href={`/shop/${c.slug}`}
-            className="group flex w-32 shrink-0 snap-start flex-col items-center text-center sm:w-auto"
-          >
-            <span className="relative block w-full overflow-hidden rounded-full border-4 border-white shadow-md ring-1 ring-brand-200 transition group-hover:ring-4 group-hover:ring-saffron-400">
-              <ProductImage
-                name={c.name}
-                slug={c.slug}
-                src={c.imageUrl ?? undefined}
-                sizes="200px"
-                className="aspect-square"
-              />
-            </span>
-            <span className="mt-4 font-display text-lg font-semibold group-hover:text-brand-600">
-              {c.name}
-            </span>
-            {c.children.length > 0 && (
-              <span className="text-xs text-cocoa-soft">
-                {c.children.length} {c.children.length === 1 ? 'variety' : 'varieties'}
-              </span>
-            )}
-          </Link>
+    <section className="container-page py-8 sm:py-12">
+      <SectionHeading
+        eyebrow="Explore"
+        title="Shop by category"
+        href="/categories"
+        action="All categories"
+      />
+      <ul className="grid grid-cols-5 gap-x-2 gap-y-4 sm:gap-y-5 sm:gap-x-4 lg:grid-cols-10">
+        {tiles.map((c) => (
+          <li key={c.id}>
+            <CategoryTile category={c} />
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
+  );
+}
+
+export function CategoryTile({
+  category: c,
+}: {
+  category: CategoryNode | Omit<CategoryNode, 'children'>;
+}) {
+  const spec = artFor(c.slug, c.name);
+  return (
+    <Link href={`/shop/${c.slug}`} className="group flex flex-col items-center text-center">
+      <span
+        className="relative block aspect-square w-full overflow-hidden rounded-[1.1rem] ring-1 ring-black/[0.04] transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-card"
+        style={{ backgroundColor: spec.tone.bg }}
+      >
+        {c.imageUrl ? (
+          <Image src={c.imageUrl} alt="" fill sizes="120px" className="object-cover" />
+        ) : (
+          <SweetArt
+            spec={spec}
+            background={false}
+            className="absolute inset-0 h-full w-full scale-110 transition duration-500 group-hover:scale-[1.18]"
+          />
+        )}
+      </span>
+      <span className="mt-2 line-clamp-2 text-[0.66rem] font-bold leading-tight sm:text-[0.82rem]">
+        {c.name}
+      </span>
+    </Link>
   );
 }

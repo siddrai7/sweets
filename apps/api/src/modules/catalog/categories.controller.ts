@@ -3,35 +3,31 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, type RequestUser } from '../../common/decorators/current-user.decorator';
-import { PrismaService } from '../../prisma/prisma.service';
+import { CatalogService } from './catalog.service';
 import { CategoryDto, UpdateCategoryDto } from './catalog.dto';
 
 @ApiTags('catalog')
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly catalog: CatalogService) {}
 
   @Public()
   @Get()
   list(@CurrentUser() user?: RequestUser) {
-    const staff = user && user.role !== 'CUSTOMER';
-    return this.prisma.category.findMany({
-      where: staff ? undefined : { isActive: true },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
+    return this.catalog.listCategories(!!user && user.role !== 'CUSTOMER');
   }
 
   @ApiBearerAuth()
   @Roles('ADMIN', 'STAFF')
   @Post()
   create(@Body() dto: CategoryDto) {
-    return this.prisma.category.create({ data: dto });
+    return this.catalog.createCategory(dto);
   }
 
   @ApiBearerAuth()
   @Roles('ADMIN', 'STAFF')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
-    return this.prisma.category.update({ where: { id }, data: dto });
+    return this.catalog.updateCategory(id, dto);
   }
 }

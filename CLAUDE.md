@@ -12,6 +12,8 @@ Read `docs/ARCHITECTURE.md` first. Key rules:
 - Use `dateTimeSchema` rather than `z.coerce.date()` (Swagger can't render Date).
 - All order status changes go through `OrdersService.transition()`. All stock changes write a
   `StockMovement`.
+- Catalog writes go through `CatalogService`, which pings the storefront to refresh cached pages
+  (`StorefrontCacheService`). Storefront catalog fetches must use `CATALOG_REVALIDATE` (tagged).
 - Verify with `pnpm typecheck` and `pnpm build`.
 - Storefront: never export non-component values from a `'use client'` file for server components
   to import (they become client references). Put shared constants in `lib/`.

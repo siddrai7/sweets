@@ -3,37 +3,41 @@
  * testimonials into the ERP so the client can edit them without a deploy.
  */
 
-export interface HeroSlide {
+/** Promo cards under the hero. `art` picks the illustration until banner photography exists. */
+export interface Banner {
   eyebrow: string;
   title: string;
   body: string;
   cta: { label: string; href: string };
-  /** Tailwind classes for the slide background until real banner photography exists. */
-  theme: string;
+  art: string;
+  tone: 'wine' | 'pista' | 'saffron';
   image?: string;
 }
 
-export const heroSlides: HeroSlide[] = [
+export const banners: Banner[] = [
   {
-    eyebrow: 'Since 1989',
-    title: 'Sweets made fresh every single morning',
-    body: 'Traditional recipes, pure ghee and the finest ingredients, handcrafted in our kitchen and delivered to your door.',
-    cta: { label: 'Shop all sweets', href: '/shop' },
-    theme: 'from-brand-700 via-brand-600 to-brand-500',
+    eyebrow: 'Festive gifting',
+    title: 'Dry fruit boxes they’ll remember',
+    body: 'Kaju katli, pista katli and anjeer rolls, gift-packed by hand.',
+    cta: { label: 'Shop gifting', href: '/shop/dry-fruit-sweets' },
+    art: 'kaju-katli',
+    tone: 'wine',
   },
   {
-    eyebrow: 'Dry fruit collection',
-    title: 'Kaju katli, pista katli and more',
-    body: 'Premium cashew, pistachio and fig sweets. The gift everyone hopes to receive.',
-    cta: { label: 'Explore dry fruit sweets', href: '/shop/dry-fruit-sweets' },
-    theme: 'from-saffron-600 via-saffron-500 to-saffron-400',
+    eyebrow: 'No added sugar',
+    title: 'All the joy, none of the sugar',
+    body: 'Dates, figs and nuts, slow-cooked in pure ghee.',
+    cta: { label: 'Shop sugar-free', href: '/shop/sugar-free' },
+    art: 'anjeer-roll',
+    tone: 'pista',
   },
   {
-    eyebrow: 'Tea-time favourites',
-    title: 'Crunchy namkeen and fresh snacks',
-    body: 'Aloo bhujia, kachori, dhokla and the snacks that make every evening better.',
+    eyebrow: 'Tea-time',
+    title: 'Namkeen, crisp and fresh',
+    body: 'Aloo bhujia, khatta meetha and evening snacks.',
     cta: { label: 'Shop namkeen', href: '/shop/namkeen' },
-    theme: 'from-pista-600 via-[#6f8c3f] to-[#8aa356]',
+    art: 'aloo-bhujia',
+    tone: 'saffron',
   },
 ];
 
@@ -85,4 +89,11 @@ export const testimonials = [
     name: 'Vikram P.',
     place: 'Thane',
   },
+];
+
+/** Products in the hero collage: one large, two small. Use slugs that exist in the catalog. */
+export const heroFeatures = [
+  { slug: 'kaju-katli', name: 'Kaju Katli', note: 'Our signature' },
+  { slug: 'motichoor-ladoo', name: 'Motichoor Ladoo' },
+  { slug: 'kesar-rasmalai', name: 'Kesar Rasmalai' },
 ];

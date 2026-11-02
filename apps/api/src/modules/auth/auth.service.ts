@@ -101,7 +101,8 @@ export class AuthService {
     return user;
   }
 
-  private revokeAll(userId: string) {
+  /** Ends every session for a user (sign-out everywhere). */
+  revokeAll(userId: string) {
     return this.prisma.refreshToken.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },

@@ -31,12 +31,12 @@ export default async function PolicyPage({ params }: { params: Params }) {
   return (
     <div className="container-page max-w-3xl py-8">
       <Breadcrumbs items={[{ label: policy.title, href: `/policies/${slug}` }]} />
-      <h1 className="mt-8 text-4xl font-semibold sm:text-5xl">{policy.title}</h1>
+      <h1 className="mt-8 text-4xl font-light sm:text-6xl">{policy.title}</h1>
       <p className="mt-3 text-sm text-cocoa-soft">Last updated: {policiesUpdated}</p>
       <div className="mt-10 space-y-8">
         {policy.sections.map((s) => (
           <section key={s.heading}>
-            <h2 className="text-2xl font-semibold">{s.heading}</h2>
+            <h2 className="text-2xl font-normal">{s.heading}</h2>
             {s.body.map((p) => (
               <p key={p} className="mt-3 leading-relaxed text-cocoa-soft">
                 {p}
