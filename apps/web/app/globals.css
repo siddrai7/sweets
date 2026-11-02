@@ -1,0 +1,90 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Swap these values for the client's brand colours; every component
+ * uses the token names, never raw hex values.
+ */
+@theme {
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), Georgia, serif;
+
+  /* Primary: deep maroon. 50/100/200 double as the cream and sand surfaces. */
+  --color-brand-50: #fbf7f0;
+  --color-brand-100: #f4ebdc;
+  --color-brand-200: #e8d9bf;
+  --color-brand-300: #d4b98f;
+  --color-brand-500: #a8292d;
+  --color-brand-600: #8e1b1f;
+  --color-brand-700: #721519;
+  --color-brand-900: #3e0b0d;
+
+  /* Accent: saffron gold. */
+  --color-saffron-100: #fbefd5;
+  --color-saffron-400: #e9b450;
+  --color-saffron-500: #d9962b;
+  --color-saffron-600: #b97a17;
+
+  --color-pista-100: #edf2e1;
+  --color-pista-600: #5d7a34;
+
+  /* Text. */
+  --color-cocoa: #2b1d14;
+  --color-cocoa-soft: #6b5546;
+
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-slide-in: slide-in 0.25s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-brand-50 font-sans text-cocoa antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-outline {
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-brand-600 px-6 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility input-field {
+  @apply w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm placeholder:text-cocoa-soft/60 focus:border-brand-600 focus:outline-none;
+}

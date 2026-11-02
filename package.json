@@ -1,0 +1,24 @@
+{
+  "name": "sweets",
+  "private": true,
+  "packageManager": "pnpm@11.13.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:generate": "turbo run generate",
+    "db:migrate": "pnpm --filter @sweets/api db:migrate",
+    "db:seed": "pnpm --filter @sweets/api db:seed",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.11.7",
+    "typescript": "~5.9.3"
+  }
+}
