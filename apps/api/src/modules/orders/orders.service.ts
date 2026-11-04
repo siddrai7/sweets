@@ -19,6 +19,7 @@ import { pageArgs, paginated } from '../../common/utils/pagination';
 import { referenceNumber } from '../../common/utils/reference-number';
 import { PrismaService, type Tx } from '../../prisma/prisma.service';
 import { AccountService } from '../account/account.service';
+import { InvoicesService } from './invoices.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PaymentsService } from '../payments/payments.service';
 
@@ -29,8 +30,18 @@ const CUSTOMER_CANCELLABLE: OrderStatus[] = ['PENDING_PAYMENT', 'CONFIRMED'];
 const orderInclude = {
   items: true,
   payments: { orderBy: { createdAt: 'desc' } },
-  statusHistory: { orderBy: { createdAt: 'asc' } },
+  statusHistory: {
+    orderBy: { createdAt: 'asc' },
+    include: { changedBy: { select: { name: true, role: true } } },
+  },
   customer: { select: { id: true, name: true, email: true, phone: true } },
+  returns: {
+    orderBy: { createdAt: 'desc' },
+    include: {
+      createdBy: { select: { name: true, role: true } },
+      resolvedBy: { select: { name: true } },
+    },
+  },
 } satisfies Prisma.OrderInclude;
 
 @Injectable()
@@ -41,6 +52,7 @@ export class OrdersService {
     private readonly payments: PaymentsService,
     private readonly config: ConfigService<Env, true>,
     private readonly account: AccountService,
+    private readonly invoices: InvoicesService,
   ) {}
 
   private readonly logger = new Logger(OrdersService.name);
@@ -57,7 +69,7 @@ export class OrdersService {
 
     const variants = await this.prisma.productVariant.findMany({
       where: { id: { in: [...quantities.keys()] }, isActive: true, product: { isActive: true } },
-      include: { product: { select: { name: true, taxRatePercent: true } } },
+      include: { product: { select: { name: true, taxRatePercent: true, hsnCode: true } } },
     });
     if (variants.length !== quantities.size) {
       throw new BadRequestException('One or more items are no longer available');
@@ -75,6 +87,7 @@ export class OrdersService {
         unitPrice: v.price,
         quantity,
         taxRatePercent: rate,
+        hsnCode: v.product.hsnCode,
         lineTotal,
         tax: lineTotal.mul(rate).div(rate.add(100)),
       };
@@ -179,6 +192,11 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, input: UpdateOrderStatusInput, userId: string) {
+    if (input.status === 'REFUNDED') {
+      throw new BadRequestException(
+        'Record the refund on the order instead; it moves to Refunded once fully refunded.',
+      );
+    }
     await this.prisma.$transaction((tx) =>
       this.transition(tx, id, input.status, userId, input.note),
     );
@@ -232,6 +250,12 @@ export class OrdersService {
     }
     if (to === 'DELIVERED') {
       await this.payments.markCodCollected(tx, orderId);
+      await this.invoices.issue(tx, orderId);
     }
+  }
+
+  /** Used by ReturnsService once refunds cover the whole order. */
+  markRefunded(tx: Tx, orderId: string, userId: string) {
+    return this.transition(tx, orderId, 'REFUNDED', userId, 'Fully refunded');
   }
 }

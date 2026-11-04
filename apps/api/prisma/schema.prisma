@@ -36,12 +36,14 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  refreshTokens  RefreshToken[]
-  addresses      Address[]
-  orders         Order[]
-  statusChanges  OrderStatusEvent[]
-  stockMovements StockMovement[]
-  cartItems      CartItem[]
+  refreshTokens   RefreshToken[]
+  addresses       Address[]
+  orders          Order[]
+  statusChanges   OrderStatusEvent[]
+  stockMovements  StockMovement[]
+  cartItems       CartItem[]
+  returnsCreated  ReturnRequest[]    @relation("ReturnCreatedBy")
+  returnsResolved ReturnRequest[]    @relation("ReturnResolvedBy")
 
   @@index([role])
 }
@@ -113,31 +115,31 @@ model Category {
 }
 
 model Product {
-  id              String           @id @default(cuid())
-  name            String
-  slug            String           @unique
-  description     String?
-  categoryId      String
-  category        Category         @relation(fields: [categoryId], references: [id])
-  images          String[]
-  tags            String[]
-  isVeg           Boolean          @default(true)
-  isActive        Boolean          @default(true)
-  isFeatured      Boolean          @default(false)
+  id                  String   @id @default(cuid())
+  name                String
+  slug                String   @unique
+  description         String?
+  categoryId          String
+  category            Category @relation(fields: [categoryId], references: [id])
+  images              String[]
+  tags                String[]
+  isVeg               Boolean  @default(true)
+  isActive            Boolean  @default(true)
+  isFeatured          Boolean  @default(false)
   /// Used to default a batch's expiry date when it is produced.
-  shelfLifeDays   Int?
-  hsnCode         String?
-  taxRatePercent  Decimal          @default(5) @db.Decimal(5, 2)
-  metaTitle       String?
-  metaDescription String?
+  shelfLifeDays       Int?
+  hsnCode             String?
+  taxRatePercent      Decimal  @default(5) @db.Decimal(5, 2)
+  metaTitle           String?
+  metaDescription     String?
   /// Shown on the product page; free text so the kitchen can write it naturally.
   ingredients         String?
   allergens           String?
   storageInstructions String?
   /// Lowest active variant price, kept in sync by CatalogService so lists can sort/filter by price.
-  basePrice       Decimal?         @db.Decimal(10, 2)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  basePrice           Decimal? @db.Decimal(10, 2)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   variants ProductVariant[]
 
@@ -148,20 +150,20 @@ model Product {
 
 /// A sellable unit of a product: "250 g", "1 kg", "Box of 12".
 model ProductVariant {
-  id          String   @id @default(cuid())
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku         String   @unique
-  label       String
-  weightGrams Int?
-  price       Decimal  @db.Decimal(10, 2)
-  mrp         Decimal? @db.Decimal(10, 2)
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
+  id                String   @id @default(cuid())
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku               String   @unique
+  label             String
+  weightGrams       Int?
+  price             Decimal  @db.Decimal(10, 2)
+  mrp               Decimal? @db.Decimal(10, 2)
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
   /// Alert in the ERP when sellable stock drops to or below this.
-  lowStockThreshold Int @default(5)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  lowStockThreshold Int      @default(5)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   batches        StockBatch[]
   stockMovements StockMovement[]
@@ -196,19 +198,19 @@ model Location {
 /// Finished-goods stock is tracked per batch so we can sell oldest-first and
 /// flag anything close to expiry. `quantity` is the units remaining.
 model StockBatch {
-  id              String    @id @default(cuid())
+  id              String         @id @default(cuid())
   variantId       String
   variant         ProductVariant @relation(fields: [variantId], references: [id])
   locationId      String
-  location        Location  @relation(fields: [locationId], references: [id])
+  location        Location       @relation(fields: [locationId], references: [id])
   batchCode       String
   quantity        Int
   initialQuantity Int
-  producedAt      DateTime  @default(now())
+  producedAt      DateTime       @default(now())
   expiresAt       DateTime?
-  unitCost        Decimal?  @db.Decimal(10, 2)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  unitCost        Decimal?       @db.Decimal(10, 2)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   movements StockMovement[]
 
@@ -382,12 +384,17 @@ model Order {
   discountTotal     Decimal         @default(0) @db.Decimal(10, 2)
   total             Decimal         @db.Decimal(12, 2)
   notes             String?
+  /// GST tax invoice, issued when the order is delivered (or collected). Sequential per
+  /// financial year, e.g. "MH/26-27/00042".
+  invoiceNumber     String?         @unique
+  invoicedAt        DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
   items         OrderItem[]
   payments      Payment[]
   statusHistory OrderStatusEvent[]
+  returns       ReturnRequest[]
 
   @@index([customerId, createdAt])
   @@index([status, createdAt])
@@ -407,6 +414,8 @@ model OrderItem {
   unitPrice      Decimal        @db.Decimal(10, 2)
   quantity       Int
   taxRatePercent Decimal        @db.Decimal(5, 2)
+  /// HSN code at the time of ordering, for the GST invoice.
+  hsnCode        String?
   lineTotal      Decimal        @db.Decimal(12, 2)
 
   @@index([orderId])
@@ -453,6 +462,65 @@ model Payment {
   updatedAt   DateTime        @updatedAt
 
   @@index([orderId])
+}
+
+/// Last invoice number issued per financial year ("26-27"). Incremented in the same
+/// transaction that issues the invoice, so numbers are gapless and never reused.
+model InvoiceSequence {
+  financialYear String @id
+  lastNumber    Int    @default(0)
+}
+
+// ───────────────────────────── Returns & refunds ─────────────────────────────
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum ReturnReason {
+  DAMAGED
+  WRONG_ITEM
+  MISSING_ITEM
+  QUALITY
+  OTHER
+}
+
+enum RefundMethod {
+  CASH
+  UPI
+  BANK_TRANSFER
+  ORIGINAL_PAYMENT
+}
+
+/// A customer's "report a problem" on a delivered order, or a refund staff recorded
+/// directly. Sweets are perishable, so nothing is restocked; approval records the refund.
+model ReturnRequest {
+  id              String        @id @default(cuid())
+  orderId         String
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status          ReturnStatus  @default(REQUESTED)
+  reason          ReturnReason
+  /// [{ orderItemId, quantity }] the customer is unhappy with.
+  items           Json
+  note            String?
+  /// Value of the affected items, as the customer asked.
+  requestedAmount Decimal       @db.Decimal(12, 2)
+  refundAmount    Decimal?      @db.Decimal(12, 2)
+  refundMethod    RefundMethod?
+  /// Shown to the customer: why it was rejected, or how the refund was paid.
+  resolutionNote  String?
+  createdById     String
+  createdBy       User          @relation("ReturnCreatedBy", fields: [createdById], references: [id])
+  resolvedById    String?
+  resolvedBy      User?         @relation("ReturnResolvedBy", fields: [resolvedById], references: [id])
+  resolvedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([status, createdAt])
 }
 
 // ───────────────────────────── Website engagement ─────────────────────────────

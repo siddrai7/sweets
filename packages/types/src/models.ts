@@ -10,6 +10,9 @@ import type {
   PaymentProvider,
   PaymentStatus,
   PurchaseOrderStatus,
+  RefundMethod,
+  ReturnReason,
+  ReturnStatus,
   Role,
 } from './enums.js';
 
@@ -104,6 +107,7 @@ export interface OrderItem {
   unitPrice: string;
   quantity: number;
   taxRatePercent: string;
+  hsnCode: string | null;
   lineTotal: string;
 }
 
@@ -121,6 +125,29 @@ export interface OrderStatusEvent {
   status: OrderStatus;
   note: string | null;
   createdAt: string;
+  /** Who made the change; null for system changes. */
+  changedBy?: { name: string; role: Role } | null;
+}
+
+export interface ReturnRequest {
+  id: string;
+  orderId: string;
+  status: ReturnStatus;
+  reason: ReturnReason;
+  items: { orderItemId: string; quantity: number }[];
+  note: string | null;
+  requestedAmount: string;
+  refundAmount: string | null;
+  refundMethod: RefundMethod | null;
+  resolutionNote: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  createdBy?: { name: string; role: Role };
+  resolvedBy?: { name: string } | null;
+  /** On the ERP returns list. */
+  order?: Pick<Order, 'id' | 'orderNumber' | 'total' | 'fulfillment'> & {
+    customer: { name: string; phone: string | null };
+  };
 }
 
 export interface Order {
@@ -140,9 +167,13 @@ export interface Order {
   discountTotal: string;
   total: string;
   notes: string | null;
+  /** Set once the GST invoice has been issued (on delivery). */
+  invoiceNumber: string | null;
+  invoicedAt: string | null;
   items: OrderItem[];
   payments?: Payment[];
   statusHistory?: OrderStatusEvent[];
+  returns?: ReturnRequest[];
   createdAt: string;
   updatedAt: string;
 }

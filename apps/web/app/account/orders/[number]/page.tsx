@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@sweets/api-client';
-import type { Order } from '@sweets/types';
+import { RETURN_WINDOW_HOURS, type Order, type RefundMethod } from '@sweets/types';
+import {
+  REASON_LABEL,
+  ReportProblemSheet,
+  reportableQuantities,
+} from '@/components/account/report-problem';
 import {
   CUSTOMER_CANCELLABLE,
   ORDER_STATUS,
@@ -22,11 +27,18 @@ import {
   WhatsAppIcon,
 } from '@/components/ui/icons';
 import { deliveryEstimate } from '@/lib/delivery';
+import { openDocument } from '@/lib/documents';
 import { formatMoney } from '@/lib/money';
 import { useSession } from '@/lib/session';
 import { site } from '@/lib/site';
 
 const FINISHED: Order['status'][] = ['DELIVERED', 'CANCELLED', 'REFUNDED'];
+const REFUND_METHOD_TEXT: Record<RefundMethod, string> = {
+  CASH: 'cash',
+  UPI: 'UPI',
+  BANK_TRANSFER: 'bank transfer',
+  ORIGINAL_PAYMENT: 'your original payment method',
+};
 
 function OrderDetail() {
   const { number } = useParams<{ number: string }>();
@@ -37,6 +49,7 @@ function OrderDetail() {
   const [missing, setMissing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   const load = useCallback(
     () =>
@@ -88,6 +101,22 @@ function OrderDetail() {
   const payment = order.payments?.[0];
   const itemCount = order.items.reduce((n, i) => n + i.quantity, 0);
   const cancellable = CUSTOMER_CANCELLABLE.includes(order.status);
+  const returns = order.returns ?? [];
+  const refunded = returns
+    .filter((r) => r.status === 'APPROVED')
+    .reduce((n, r) => n + Number(r.refundAmount ?? 0), 0);
+  const deliveredAt = order.statusHistory
+    ?.filter((e) => e.status === 'DELIVERED')
+    .map((e) => new Date(e.createdAt).getTime())
+    .pop();
+  const reportUntil = deliveredAt ? deliveredAt + RETURN_WINDOW_HOURS * 3_600_000 : 0;
+  const canReport =
+    order.status === 'DELIVERED' &&
+    Date.now() < reportUntil &&
+    !returns.some((r) => r.status === 'REQUESTED') &&
+    [...reportableQuantities(order).values()].some((n) => n > 0);
+  const hasInvoice =
+    !!order.invoiceNumber || order.status === 'DELIVERED' || order.status === 'REFUNDED';
   const help = `https://wa.me/${site.contact.whatsapp}?text=${encodeURIComponent(
     `Hi ${site.name}, I need help with my order ${order.orderNumber}.`,
   )}`;
@@ -114,7 +143,7 @@ function OrderDetail() {
       </Link>
 
       {/* Header: a celebratory confirmation right after checkout, a status card otherwise. */}
-      {placed && order.status !== 'CANCELLED' ? (
+      {placed && !FINISHED.includes(order.status) ? (
         <section className="mt-5 animate-rise overflow-hidden rounded-[2rem] bg-brand-900 p-6 text-brand-100 sm:p-10">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-pista-500 text-white">
             <CheckIcon size={28} strokeWidth={2.5} />
@@ -278,10 +307,86 @@ function OrderDetail() {
         </dl>
       </section>
 
+      {returns.length > 0 && (
+        <section className="mt-5 rounded-3xl bg-white p-5 ring-1 ring-brand-200 sm:p-6">
+          <h2 className="font-sans text-sm font-bold">Problems & refunds</h2>
+          {refunded > 0 && (
+            <p className="mt-2 text-sm font-semibold text-pista-700">
+              {formatMoney(refunded)} refunded on this order
+            </p>
+          )}
+          <ul className="mt-3 space-y-3">
+            {returns.map((r) => (
+              <li key={r.id} className="rounded-2xl bg-brand-50 p-4 text-sm ring-1 ring-brand-100">
+                <p className="flex flex-wrap items-center justify-between gap-2 font-semibold">
+                  {REASON_LABEL[r.reason]}
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                      r.status === 'APPROVED'
+                        ? 'bg-pista-100 text-pista-700'
+                        : r.status === 'REJECTED'
+                          ? 'bg-brand-100 text-cocoa-soft'
+                          : 'bg-saffron-100 text-saffron-600'
+                    }`}
+                  >
+                    {r.status === 'REQUESTED'
+                      ? 'We’re looking into it'
+                      : r.status === 'APPROVED'
+                        ? 'Refunded'
+                        : 'Not approved'}
+                  </span>
+                </p>
+                {r.status === 'REQUESTED' && (
+                  <p className="mt-1 text-cocoa-soft">
+                    We’ll review this shortly and call you on your order’s phone number if we need
+                    anything.
+                  </p>
+                )}
+                {r.status === 'APPROVED' && (
+                  <p className="mt-1 text-cocoa-soft">
+                    {formatMoney(r.refundAmount!)} refunded
+                    {r.refundMethod && ` by ${REFUND_METHOD_TEXT[r.refundMethod]}`}.
+                    {r.resolutionNote && ` ${r.resolutionNote}`}
+                  </p>
+                )}
+                {r.status === 'REJECTED' && r.resolutionNote && (
+                  <p className="mt-1 text-cocoa-soft">{r.resolutionNote}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {canReport && (
+        <p className="mt-5 text-sm text-cocoa-soft">
+          Something not right? You can report a problem until{' '}
+          {new Date(reportUntil).toLocaleString('en-IN', {
+            weekday: 'short',
+            hour: 'numeric',
+            minute: '2-digit',
+          })}
+          .
+        </p>
+      )}
+
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Link href="/shop" className="btn-primary">
           Continue shopping
         </Link>
+        {hasInvoice && (
+          <button
+            onClick={() => openDocument(() => api.orders.invoiceHtml(order.orderNumber))}
+            className="btn-ghost"
+          >
+            Download invoice
+          </button>
+        )}
+        {canReport && (
+          <button onClick={() => setReporting(true)} className="btn-ghost">
+            Report a problem
+          </button>
+        )}
         <a href={help} target="_blank" rel="noreferrer" className="btn-ghost">
           <WhatsAppIcon size={18} /> Help with this order
         </a>
@@ -295,6 +400,17 @@ function OrderDetail() {
           </button>
         )}
       </div>
+
+      {reporting && (
+        <ReportProblemSheet
+          order={order}
+          onClose={() => setReporting(false)}
+          onDone={(o) => {
+            setOrder(o);
+            setReporting(false);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -102,6 +102,19 @@ PENDING_PAYMENT → CONFIRMED → PREPARING → READY → OUT_FOR_DELIVERY → D
         └──────────────┴────────────┴────────┴──→ CANCELLED
 ```
 
+**Invoices.** A GST tax invoice is issued inside the `DELIVERED` transition: the next number
+in the financial year's `InvoiceSequence` (`MH/26-27/00042`), so numbers are gapless and never
+reused. `InvoicesService` renders it as printable HTML (`GET /orders/:id/invoice`): taxable value
+is backed out of each tax-inclusive line, split CGST+SGST within the seller's state or IGST
+otherwise, with HSN codes snapshotted on the order line. Seller details come from `SELLER_*` in
+the API env (placeholders until the client confirms them).
+
+**Returns and refunds.** Sweets are perishable, so nothing is restocked. A customer can report a
+problem (`ReturnRequest`) within 24 hours of delivery; staff approve with a refund amount and
+method, or reject with a reason, and can also record a refund directly. Refunds are capped at
+what's left of the order total; when they cover it all, `ReturnsService` moves the order to
+`REFUNDED` via `OrdersService`. `REFUNDED` can't be set by hand.
+
 **Recipes (bill of materials)** are modelled (`RecipeItem`: raw material quantity per unit of a
 variant) but not yet used to auto-deduct raw materials on production. That is Phase 2.
 
@@ -193,6 +206,7 @@ implemented. To add Razorpay:
 - [x] Auth + RBAC, catalog, batch inventory, orders with stock reservation, COD
 - [x] Storefront: catalog, product SEO, cart, checkout, order history
 - [x] Cart synced to the account across devices, saved addresses, order confirmation page
+- [x] ERP order detail (address, timeline, packing slip), GST invoices, returns and refunds
 - [x] ERP: dashboard, order processing, stock and expiry, PO workflow, vendors
 - [x] ERP user management: add team and vendor logins, edit roles, reset passwords, deactivate
 - [x] ERP catalog: create/edit products, pack sizes and prices, categories; archive/restore

@@ -1,5 +1,6 @@
 import type {
   AddStockBatchInput,
+  ApproveReturnInput,
   AdjustStockInput,
   AuthResponse,
   AuthUser,
@@ -29,9 +30,13 @@ import type {
   PurchaseOrderStatus,
   RawMaterial,
   RegisterInput,
+  ReturnQuery,
+  ReturnRequest,
+  ReturnRequestInput,
   SavedAddress,
   SavedAddressInput,
   SavedAddressUpdateInput,
+  StaffRefundInput,
   StockBatch,
   StockSummaryRow,
   UpdateUserInput,
@@ -108,7 +113,9 @@ export function createApiClient(options: ApiClientOptions) {
     }
 
     const text = await res.text();
-    const data = text ? JSON.parse(text) : undefined;
+    // JSON for API data; plain text for documents such as the HTML invoice.
+    const isJson = res.headers.get('content-type')?.includes('json') ?? true;
+    const data = text ? (isJson ? JSON.parse(text) : text) : undefined;
     if (!res.ok) throw new ApiError(res.status, data);
     return data as T;
   }
@@ -138,6 +145,12 @@ export function createApiClient(options: ApiClientOptions) {
       updateAddress: (id: string, input: SavedAddressUpdateInput) =>
         patch<SavedAddress>(`/me/addresses/${id}`, input),
       deleteAddress: (id: string) => del<void>(`/me/addresses/${id}`),
+    },
+    returns: {
+      list: (q: Partial<ReturnQuery> = {}) => get<Paginated<ReturnRequest>>('/returns', q),
+      approve: (id: string, input: ApproveReturnInput) =>
+        post<ReturnRequest>(`/returns/${id}/approve`, input),
+      reject: (id: string, note: string) => post<ReturnRequest>(`/returns/${id}/reject`, { note }),
     },
     users: {
       list: (q: Partial<UserQuery> = {}) => get<Paginated<ManagedUser>>('/users', q),
@@ -173,6 +186,15 @@ export function createApiClient(options: ApiClientOptions) {
       /** By id or order number. */
       get: (idOrNumber: string) => get<Order>(`/orders/${encodeURIComponent(idOrNumber)}`),
       cancel: (id: string) => post<Order>(`/orders/${id}/cancel`),
+      /** Printable GST tax invoice as an HTML document (issued on delivery). */
+      invoiceHtml: (idOrNumber: string) =>
+        get<string>(`/orders/${encodeURIComponent(idOrNumber)}/invoice`),
+      /** Customer: report a problem with a delivered order. */
+      requestReturn: (idOrNumber: string, input: ReturnRequestInput) =>
+        post<ReturnRequest>(`/orders/${encodeURIComponent(idOrNumber)}/returns`, input),
+      /** Staff: record a refund directly. */
+      refund: (id: string, input: StaffRefundInput) =>
+        post<ReturnRequest>(`/orders/${id}/refunds`, input),
       updateStatus: (id: string, status: OrderStatus, note?: string) =>
         patch<Order>(`/orders/${id}/status`, { status, note }),
     },

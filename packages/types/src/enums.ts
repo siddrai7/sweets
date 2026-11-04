@@ -70,3 +70,18 @@ export const PURCHASE_ORDER_STATUSES = [
   'CANCELLED',
 ] as const;
 export type PurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUSES)[number];
+
+export const RETURN_STATUSES = ['REQUESTED', 'APPROVED', 'REJECTED'] as const;
+export type ReturnStatus = (typeof RETURN_STATUSES)[number];
+
+export const RETURN_REASONS = [
+  'DAMAGED',
+  'WRONG_ITEM',
+  'MISSING_ITEM',
+  'QUALITY',
+  'OTHER',
+] as const;
+export type ReturnReason = (typeof RETURN_REASONS)[number];
+
+export const REFUND_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER', 'ORIGINAL_PAYMENT'] as const;
+export type RefundMethod = (typeof REFUND_METHODS)[number];

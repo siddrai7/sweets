@@ -10,8 +10,9 @@ Read `docs/ARCHITECTURE.md` first. Key rules:
 - Update schemas in `@sweets/types` must be built from base shapes **without** `.default()`, so
   `.partial()` never resets omitted fields on PATCH.
 - Use `dateTimeSchema` rather than `z.coerce.date()` (Swagger can't render Date).
-- All order status changes go through `OrdersService.transition()`. All stock changes write a
-  `StockMovement`.
+- All order status changes go through `OrdersService.transition()` (which also issues the GST
+  invoice on delivery). Refunds go through `ReturnsService`; `REFUNDED` is never set by hand.
+  All stock changes write a `StockMovement`.
 - Catalog writes go through `CatalogService`, which pings the storefront to refresh cached pages
   (`StorefrontCacheService`). Storefront catalog fetches must use `CATALOG_REVALIDATE` (tagged).
 - Verify with `pnpm typecheck` and `pnpm build`.
