@@ -23,7 +23,7 @@ class DashboardController {
     const now = new Date();
     const notCancelled = { notIn: ['CANCELLED', 'REFUNDED'] as ('CANCELLED' | 'REFUNDED')[] };
 
-    const [today, pendingOrders, expiringBatches, summary, thresholds] = await Promise.all([
+    const [today, pendingOrders, expiringBatches, lowStock] = await Promise.all([
       this.prisma.order.aggregate({
         where: { createdAt: { gte: startOfDay }, status: notCancelled },
         _count: true,
@@ -36,17 +36,14 @@ class DashboardController {
           expiresAt: { gt: now, lte: new Date(now.getTime() + 48 * 3_600_000) },
         },
       }),
-      this.inventory.summary(),
-      this.prisma.productVariant.findMany({ select: { id: true, lowStockThreshold: true } }),
+      this.inventory.lowStock(),
     ]);
 
-    const threshold = new Map(thresholds.map((t) => [t.id, t.lowStockThreshold]));
     return {
       ordersToday: today._count,
       revenueToday: (today._sum.total ?? 0).toString(),
       pendingOrders,
-      lowStockVariants: summary.filter((s) => s.available <= (threshold.get(s.variantId) ?? 0))
-        .length,
+      lowStockVariants: lowStock.length,
       expiringBatches,
     };
   }

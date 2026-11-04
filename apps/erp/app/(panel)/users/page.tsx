@@ -1,7 +1,8 @@
 'use client';
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import type { ManagedUser, Role, UserAudience } from '@sweets/types';
 import {
   Badge,
@@ -34,7 +35,7 @@ const ROLE_TONE: Record<Role, 'blue' | 'amber' | 'slate' | 'green'> = {
 };
 
 type Dialog =
-  | { kind: 'create' }
+  | { kind: 'create'; vendorId?: string }
   | { kind: 'edit'; user: ManagedUser }
   | { kind: 'password'; user: ManagedUser }
   | { kind: 'active'; user: ManagedUser }
@@ -50,13 +51,28 @@ function useDebounced<T>(value: T, ms = 250) {
 }
 
 export default function UsersPage() {
+  return (
+    <Suspense>
+      <Users />
+    </Suspense>
+  );
+}
+
+function Users() {
   const { api, user: me } = useAuth();
+  const router = useRouter();
+  const params = useSearchParams();
+  // Links from the Vendors page: ?vendorLogin=<id> opens "Add user" for that vendor;
+  // ?role=VENDOR filters the list.
+  const vendorLogin = params.get('vendorLogin');
   const [audience, setAudience] = useState<UserAudience>('team');
-  const [role, setRole] = useState<Role | ''>('');
+  const [role, setRole] = useState<Role | ''>((params.get('role') as Role | null) ?? '');
   const [status, setStatus] = useState<'' | 'true' | 'false'>('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [dialog, setDialog] = useState<Dialog>(null);
+  const [dialog, setDialog] = useState<Dialog>(
+    vendorLogin ? { kind: 'create', vendorId: vendorLogin } : null,
+  );
   const q = useDebounced(search.trim());
 
   useEffect(() => setPage(1), [audience, role, status, q]);
@@ -85,7 +101,10 @@ export default function UsersPage() {
   });
 
   const filtered = !!(q || role || status);
-  const close = () => setDialog(null);
+  const close = () => {
+    setDialog(null);
+    if (vendorLogin) router.replace('/users');
+  };
 
   return (
     <>
@@ -230,7 +249,12 @@ export default function UsersPage() {
         </>
       )}
 
-      {dialog?.kind === 'create' && <UserFormDialog onClose={close} />}
+      {dialog?.kind === 'create' && (
+        <UserFormDialog
+          defaults={dialog.vendorId ? { role: 'VENDOR', vendorId: dialog.vendorId } : undefined}
+          onClose={close}
+        />
+      )}
       {dialog?.kind === 'edit' && (
         <UserFormDialog user={dialog.user} isSelf={dialog.user.id === me?.id} onClose={close} />
       )}

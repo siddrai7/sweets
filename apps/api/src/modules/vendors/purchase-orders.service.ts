@@ -54,7 +54,15 @@ export class PurchaseOrdersService {
     return po;
   }
 
-  create(input: PurchaseOrderInput) {
+  async create(input: PurchaseOrderInput) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { id: input.vendorId },
+      select: { isActive: true },
+    });
+    if (!vendor) throw new BadRequestException('That vendor does not exist');
+    if (!vendor.isActive) {
+      throw new BadRequestException('This vendor is inactive. Reactivate them to place orders.');
+    }
     const items = input.items.map((item) => {
       const lineTotal = new Prisma.Decimal(item.quantity).mul(item.unitPrice).toDecimalPlaces(2);
       return { ...item, lineTotal };

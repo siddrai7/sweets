@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import type { Role } from '@sweets/types';
 import { isErpUser, useAuth } from '@/lib/auth';
@@ -18,7 +19,16 @@ const NAV: { href: string; label: string; roles: Role[] }[] = [
 ];
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
-  const { user, ready, signOut } = useAuth();
+  const { user, ready, signOut, api } = useAuth();
+  // Sidebar badge: how many sizes need restocking. Shares its cache with the Inventory page.
+  const canSeeStock = user?.role === 'ADMIN' || user?.role === 'STAFF';
+  const lowStock = useQuery({
+    queryKey: ['inventory', 'low-stock'],
+    queryFn: api.inventory.lowStock,
+    enabled: canSeeStock,
+    refetchInterval: 60_000,
+  });
+  const badges: Record<string, number | undefined> = { '/inventory': lowStock.data?.length };
   const router = useRouter();
   const pathname = usePathname();
   const nav = user ? NAV.filter((n) => n.roles.includes(user.role)) : [];
@@ -48,7 +58,17 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                 href={n.href}
                 className={`block rounded-lg px-3 py-2 text-sm ${active ? 'bg-brand-50 font-medium text-brand-700' : 'text-slate-600 hover:bg-slate-50'}`}
               >
-                {n.label}
+                <span className="flex items-center justify-between">
+                  {n.label}
+                  {!!badges[n.href] && (
+                    <span
+                      className="rounded-full bg-red-600 px-1.5 text-[0.65rem] font-semibold leading-4 text-white"
+                      title={`${badges[n.href]} items low on stock`}
+                    >
+                      {badges[n.href]}
+                    </span>
+                  )}
+                </span>
               </Link>
             );
           })}

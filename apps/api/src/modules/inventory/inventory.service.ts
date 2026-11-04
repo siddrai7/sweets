@@ -38,7 +38,13 @@ export class InventoryService {
   async summary(): Promise<StockSummaryRow[]> {
     const variants = await this.prisma.productVariant.findMany({
       where: { isActive: true, product: { isActive: true } },
-      select: { id: true, sku: true, label: true, product: { select: { name: true } } },
+      select: {
+        id: true,
+        sku: true,
+        label: true,
+        lowStockThreshold: true,
+        product: { select: { id: true, name: true } },
+      },
       orderBy: [{ product: { name: 'asc' } }, { sortOrder: 'asc' }],
     });
     const rows = await this.prisma.stockBatch.groupBy({
@@ -50,15 +56,30 @@ export class InventoryService {
     const byVariant = new Map(rows.map((r) => [r.variantId, r]));
     return variants.map((v) => {
       const row = byVariant.get(v.id);
+      const available = row?._sum.quantity ?? 0;
       return {
         variantId: v.id,
+        productId: v.product.id,
         sku: v.sku,
         productName: v.product.name,
         variantLabel: v.label,
-        available: row?._sum.quantity ?? 0,
+        available,
         nextExpiry: row?._min.expiresAt?.toISOString() ?? null,
+        lowStockThreshold: v.lowStockThreshold,
+        isLow: available <= v.lowStockThreshold,
       };
     });
+  }
+
+  /** Sizes on sale at or below their alert level, most urgent (sold out, then biggest gap) first. */
+  async lowStock(): Promise<StockSummaryRow[]> {
+    return (await this.summary())
+      .filter((r) => r.isLow)
+      .sort(
+        (a, b) =>
+          a.available - a.lowStockThreshold - (b.available - b.lowStockThreshold) ||
+          a.productName.localeCompare(b.productName),
+      );
   }
 
   listBatches(q: { variantId?: string; locationId?: string }) {

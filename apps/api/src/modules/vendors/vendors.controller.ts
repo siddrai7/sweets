@@ -4,6 +4,7 @@ import { createZodDto } from 'nestjs-zod';
 import { rawMaterialInputSchema, vendorInputSchema, vendorUpdateSchema } from '@sweets/types';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
+import { VendorsService } from './vendors.service';
 
 class VendorDto extends createZodDto(vendorInputSchema) {}
 class UpdateVendorDto extends createZodDto(vendorUpdateSchema) {}
@@ -14,23 +15,24 @@ class RawMaterialDto extends createZodDto(rawMaterialInputSchema) {}
 @Roles('ADMIN', 'STAFF')
 @Controller('vendors')
 export class VendorsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly vendors: VendorsService) {}
 
   @Get()
   list() {
-    return this.prisma.vendor.findMany({ orderBy: { name: 'asc' } });
+    return this.vendors.list();
   }
 
   @Roles('ADMIN')
   @Post()
   create(@Body() dto: VendorDto) {
-    return this.prisma.vendor.create({ data: dto });
+    return this.vendors.create(dto);
   }
 
+  /** Deactivating a vendor signs out and blocks every login linked to it. */
   @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateVendorDto) {
-    return this.prisma.vendor.update({ where: { id }, data: dto });
+    return this.vendors.update(id, dto);
   }
 }
 

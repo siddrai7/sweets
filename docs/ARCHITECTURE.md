@@ -73,6 +73,10 @@ packages/
 first** (`InventoryService.allocateFifo`). Expired batches are never sold, and the ERP lists
 batches expiring within 48 h so they can be discounted or written off.
 
+**Low stock is per pack size.** Each variant has a `lowStockThreshold` (set in the product
+editor). `InventoryService.lowStock()` returns active sizes at or below it, most urgent first;
+the ERP shows them on the Inventory page, the dashboard and as a sidebar badge.
+
 **Every stock change is a ledger row.** `StockMovement` is append-only (PRODUCTION, PURCHASE, SALE,
 RETURN, ADJUSTMENT, WASTAGE, TRANSFER). Batch quantities are the running result, which gives a
 full audit trail for wastage and theft questions.
@@ -180,7 +184,10 @@ implemented. To add Razorpay:
 - [x] ERP: dashboard, order processing, stock and expiry, PO workflow, vendors
 - [x] ERP user management: add team and vendor logins, edit roles, reset passwords, deactivate
 - [x] ERP catalog: create/edit products, pack sizes and prices, categories; archive/restore
-- [ ] ERP forms: create purchase orders, vendors
+- [x] ERP vendors: onboarding, edit, deactivate (blocks their logins), vendor logins from the row
+- [x] Low-stock alerts: per-size alert levels, Inventory panel with one-click restock, dashboard
+      list, sidebar badge
+- [ ] ERP forms: create purchase orders
 - [ ] Online payments (Razorpay) + webhook + unpaid-order expiry job
 - [ ] Image upload (S3/R2 presigned URLs)
 - [ ] Order notifications (SMS/WhatsApp) via BullMQ on Redis

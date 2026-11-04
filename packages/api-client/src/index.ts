@@ -33,6 +33,7 @@ import type {
   UserQuery,
   Vendor,
   VendorInput,
+  VendorUpdateInput,
 } from '@sweets/types';
 
 /** RequestInit plus Next.js' caching options, passed straight through to fetch. */
@@ -160,6 +161,8 @@ export function createApiClient(options: ApiClientOptions) {
     inventory: {
       locations: () => get<Location[]>('/inventory/locations'),
       summary: () => get<StockSummaryRow[]>('/inventory/summary'),
+      /** Sizes at or below their low-stock alert level, most urgent first. */
+      lowStock: () => get<StockSummaryRow[]>('/inventory/low-stock'),
       batches: (q: { variantId?: string; locationId?: string } = {}) =>
         get<StockBatch[]>('/inventory/batches', q),
       expiring: (withinHours = 48) => get<StockBatch[]>('/inventory/expiring', { withinHours }),
@@ -169,6 +172,8 @@ export function createApiClient(options: ApiClientOptions) {
     vendors: {
       list: () => get<Vendor[]>('/vendors'),
       create: (input: VendorInput) => post<Vendor>('/vendors', input),
+      /** Admin only. Deactivating signs out and blocks the vendor's logins. */
+      update: (id: string, input: VendorUpdateInput) => patch<Vendor>(`/vendors/${id}`, input),
       rawMaterials: () => get<RawMaterial[]>('/raw-materials'),
     },
     purchaseOrders: {

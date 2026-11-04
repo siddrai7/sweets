@@ -173,11 +173,16 @@ export interface StockBatch {
 
 export interface StockSummaryRow {
   variantId: string;
+  productId: string;
   sku: string;
   productName: string;
   variantLabel: string;
   available: number;
   nextExpiry: string | null;
+  /** Alert level set on the pack size in the product editor. */
+  lowStockThreshold: number;
+  /** `available <= lowStockThreshold`. */
+  isLow: boolean;
 }
 
 export interface Vendor {
@@ -189,6 +194,11 @@ export interface Vendor {
   gstin: string | null;
   address: string | null;
   isActive: boolean;
+  createdAt?: string;
+  /** Active ERP logins linked to this vendor. */
+  loginCount?: number;
+  /** Purchase orders sent or acknowledged but not yet received. */
+  openPurchaseOrders?: number;
 }
 
 export interface RawMaterial {

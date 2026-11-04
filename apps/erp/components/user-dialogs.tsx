@@ -121,10 +121,13 @@ function Credentials({
 export function UserFormDialog({
   user,
   isSelf,
+  defaults,
   onClose,
 }: {
   user?: ManagedUser;
   isSelf?: boolean;
+  /** Pre-fill a new user, e.g. a vendor login started from the Vendors page. */
+  defaults?: { role?: Role; vendorId?: string };
   onClose: () => void;
 }) {
   const { api } = useAuth();
@@ -134,8 +137,8 @@ export function UserFormDialog({
     name: user?.name ?? '',
     email: user?.email ?? '',
     phone: user?.phone ?? '',
-    role: (user?.role ?? 'STAFF') as Role,
-    vendorId: user?.vendorId ?? '',
+    role: (user?.role ?? defaults?.role ?? 'STAFF') as Role,
+    vendorId: user?.vendorId ?? defaults?.vendorId ?? '',
     password: editing ? '' : generatePassword(),
   });
   const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
@@ -293,7 +296,7 @@ export function UserFormDialog({
               {vendors.data?.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.name}
-                  {!v.isActive && ' (inactive)'}
+                  {!v.isActive && ' (inactive: logins blocked)'}
                 </option>
               ))}
             </select>
