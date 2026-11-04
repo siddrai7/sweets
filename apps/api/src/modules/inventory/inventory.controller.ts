@@ -48,6 +48,12 @@ export class InventoryController {
     return this.inventory.summary();
   }
 
+  /** Sizes at or below their low-stock alert level. */
+  @Get('low-stock')
+  lowStock() {
+    return this.inventory.lowStock();
+  }
+
   @Get('batches')
   batches(@Query() q: BatchQueryDto) {
     return this.inventory.listBatches(q);

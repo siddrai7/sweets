@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -17,6 +18,8 @@ import type { Env } from '../../config/env';
 import { pageArgs, paginated } from '../../common/utils/pagination';
 import { referenceNumber } from '../../common/utils/reference-number';
 import { PrismaService, type Tx } from '../../prisma/prisma.service';
+import { AccountService } from '../account/account.service';
+import { InvoicesService } from './invoices.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PaymentsService } from '../payments/payments.service';
 
@@ -27,8 +30,18 @@ const CUSTOMER_CANCELLABLE: OrderStatus[] = ['PENDING_PAYMENT', 'CONFIRMED'];
 const orderInclude = {
   items: true,
   payments: { orderBy: { createdAt: 'desc' } },
-  statusHistory: { orderBy: { createdAt: 'asc' } },
+  statusHistory: {
+    orderBy: { createdAt: 'asc' },
+    include: { changedBy: { select: { name: true, role: true } } },
+  },
   customer: { select: { id: true, name: true, email: true, phone: true } },
+  returns: {
+    orderBy: { createdAt: 'desc' },
+    include: {
+      createdBy: { select: { name: true, role: true } },
+      resolvedBy: { select: { name: true } },
+    },
+  },
 } satisfies Prisma.OrderInclude;
 
 @Injectable()
@@ -38,7 +51,11 @@ export class OrdersService {
     private readonly inventory: InventoryService,
     private readonly payments: PaymentsService,
     private readonly config: ConfigService<Env, true>,
+    private readonly account: AccountService,
+    private readonly invoices: InvoicesService,
   ) {}
+
+  private readonly logger = new Logger(OrdersService.name);
 
   /**
    * Prices are tax-inclusive (MRP-style). Stock is allocated at placement so two customers
@@ -52,7 +69,7 @@ export class OrdersService {
 
     const variants = await this.prisma.productVariant.findMany({
       where: { id: { in: [...quantities.keys()] }, isActive: true, product: { isActive: true } },
-      include: { product: { select: { name: true, taxRatePercent: true } } },
+      include: { product: { select: { name: true, taxRatePercent: true, hsnCode: true } } },
     });
     if (variants.length !== quantities.size) {
       throw new BadRequestException('One or more items are no longer available');
@@ -70,6 +87,7 @@ export class OrdersService {
         unitPrice: v.price,
         quantity,
         taxRatePercent: rate,
+        hsnCode: v.product.hsnCode,
         lineTotal,
         tax: lineTotal.mul(rate).div(rate.add(100)),
       };
@@ -115,12 +133,24 @@ export class OrdersService {
         });
       }
 
+      // Bought items leave the customer's synced cart (on every device).
+      await tx.cartItem.deleteMany({
+        where: { userId: customerId, variantId: { in: lines.map((l) => l.variantId) } },
+      });
+
       const { intent } = await this.payments.initiate(tx, order, input.paymentProvider);
       if (intent.confirmImmediately) {
         await this.transition(tx, order.id, 'CONFIRMED', customerId, 'Cash on delivery');
       }
       return { orderId: order.id, clientPayload: intent.clientPayload };
     });
+
+    // Saving the address is a convenience; it must never fail an order that went through.
+    if (input.saveAddress && input.fulfillment === 'DELIVERY' && input.address) {
+      await this.account
+        .createAddress(customerId, { ...input.address, isDefault: false })
+        .catch((e: unknown) => this.logger.warn(`Couldn't save address: ${String(e)}`));
+    }
 
     return { order: await this.get(orderId), payment: clientPayload };
   }
@@ -149,8 +179,12 @@ export class OrdersService {
     return paginated(items, total, q);
   }
 
-  async get(id: string, customerId?: string) {
-    const order = await this.prisma.order.findUnique({ where: { id }, include: orderInclude });
+  /** By id (ERP) or order number (customer links such as /account/orders/SW-…). */
+  async get(idOrNumber: string, customerId?: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { OR: [{ id: idOrNumber }, { orderNumber: idOrNumber }] },
+      include: orderInclude,
+    });
     if (!order || (customerId && order.customerId !== customerId)) {
       throw new NotFoundException('Order not found');
     }
@@ -158,6 +192,11 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, input: UpdateOrderStatusInput, userId: string) {
+    if (input.status === 'REFUNDED') {
+      throw new BadRequestException(
+        'Record the refund on the order instead; it moves to Refunded once fully refunded.',
+      );
+    }
     await this.prisma.$transaction((tx) =>
       this.transition(tx, id, input.status, userId, input.note),
     );
@@ -211,6 +250,12 @@ export class OrdersService {
     }
     if (to === 'DELIVERED') {
       await this.payments.markCodCollected(tx, orderId);
+      await this.invoices.issue(tx, orderId);
     }
+  }
+
+  /** Used by ReturnsService once refunds cover the whole order. */
+  markRefunded(tx: Tx, orderId: string, userId: string) {
+    return this.transition(tx, orderId, 'REFUNDED', userId, 'Fully refunded');
   }
 }

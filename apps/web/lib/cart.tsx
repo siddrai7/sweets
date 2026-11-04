@@ -1,8 +1,21 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import type { CartView } from '@sweets/types';
+import { useSession } from './session';
 
 const STORAGE_KEY = 'sweets.cart';
+/** Set while a signed-in change hasn't reached the server yet, so a reload pushes it. */
+const DIRTY_KEY = 'sweets.cart.dirty';
+const SYNC_DELAY_MS = 400;
 
 export interface CartLine {
   variantId: string;
@@ -43,11 +56,66 @@ function clamp(line: CartLine, quantity: number) {
   return Math.min(quantity, line.maxQuantity ?? 100);
 }
 
+/** What the server stores: just variant + quantity, order-independent. */
+const snapshot = (lines: CartLine[]) =>
+  lines
+    .map((l) => `${l.variantId}:${l.quantity}`)
+    .sort()
+    .join('|');
+
+const toItems = (lines: CartLine[]) =>
+  lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity }));
+
+/** Server lines carry live prices and stock, so they replace whatever the device had. */
+const fromServer = (view: CartView): CartLine[] =>
+  view.items.map((i) => ({
+    variantId: i.variantId,
+    productSlug: i.productSlug,
+    productName: i.productName,
+    variantLabel: i.variantLabel,
+    unitPrice: i.unitPrice,
+    mrp: i.mrp ?? undefined,
+    image: i.image ?? undefined,
+    quantity: Math.min(i.quantity, Math.max(i.available, 1)),
+    maxQuantity: i.available,
+  }));
+
+function setDirty(dirty: boolean) {
+  try {
+    if (dirty) localStorage.setItem(DIRTY_KEY, '1');
+    else localStorage.removeItem(DIRTY_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+function isDirty() {
+  try {
+    return localStorage.getItem(DIRTY_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [lastAdded, setLastAdded] = useState<CartContext['lastAdded']>(null);
+  const { user, ready, api } = useSession();
+  const userId = user?.id ?? null;
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  /** Snapshot the server is known to hold; null until this device has synced. */
+  const synced = useRef<string | null>(null);
+  /** Previous signed-in user id: undefined = page just loaded. */
+  const prevUser = useRef<string | null | undefined>(undefined);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const applyServer = useCallback((view: CartView) => {
+    const next = fromServer(view);
+    synced.current = snapshot(next);
+    setLines(next);
+  }, []);
 
   useEffect(() => {
     try {
@@ -67,6 +135,90 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       /* storage unavailable */
     }
   }, [lines, loaded]);
+
+  /*
+   * Account sync. Signed out, the cart lives only in this browser. Signed in, the account
+   * holds the cart so it follows the customer to every device:
+   *  - signing in merges this browser's cart into the account (larger quantity wins);
+   *  - opening the site already signed in loads the account cart (or pushes a local edit
+   *    that never reached the server);
+   *  - every change is saved to the account shortly after it's made;
+   *  - coming back to the tab refreshes from the account, picking up other devices' edits;
+   *  - signing out clears this device; the account keeps the cart.
+   */
+  useEffect(() => {
+    if (!ready || !loaded) return;
+    const prev = prevUser.current;
+    prevUser.current = userId;
+    if (prev === userId) return;
+
+    if (!userId) {
+      if (prev) {
+        synced.current = null;
+        setDirty(false);
+        setLines([]);
+      }
+      return;
+    }
+
+    const local = toItems(linesRef.current);
+    const load =
+      prev === null
+        ? api.account.mergeCart(local) // signed in on this page
+        : prev === undefined && isDirty()
+          ? api.account.replaceCart(local) // unsent edit from last visit
+          : api.account.cart();
+    load
+      .then((view) => {
+        setDirty(false);
+        applyServer(view);
+      })
+      .catch(() => {
+        /* offline or not a shopper account: keep the local cart */
+      });
+  }, [ready, loaded, userId, api, applyServer]);
+
+  // Save changes to the account, debounced.
+  useEffect(() => {
+    if (!userId || synced.current === null) return;
+    const current = snapshot(lines);
+    if (current === synced.current) return;
+    setDirty(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      api.account
+        .replaceCart(toItems(linesRef.current))
+        .then((view) => {
+          setDirty(false);
+          // Only adopt the server's copy if nothing changed while the request was in flight.
+          if (snapshot(linesRef.current) === current) applyServer(view);
+          else synced.current = snapshot(fromServer(view));
+        })
+        .catch(() => {
+          /* stays dirty; retried on the next change or visit */
+        });
+    }, SYNC_DELAY_MS);
+  }, [lines, userId, api, applyServer]);
+
+  // Pick up changes made on other devices when the customer comes back to this tab.
+  useEffect(() => {
+    if (!userId) return;
+    const refresh = () => {
+      if (document.visibilityState !== 'visible' || timer.current || isDirty()) return;
+      if (synced.current === null) return;
+      api.account
+        .cart()
+        .then(applyServer)
+        .catch(() => undefined);
+    };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [userId, api, applyServer]);
 
   const add = useCallback<CartContext['add']>((line, quantity = 1, options = {}) => {
     setLines((prev) => {

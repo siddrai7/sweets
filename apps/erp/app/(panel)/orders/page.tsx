@@ -1,9 +1,11 @@
 'use client';
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useState } from 'react';
+import { nextActions } from '@/lib/orders';
 import { formatMoney } from '@sweets/api-client';
-import { ORDER_STATUSES, ORDER_STATUS_TRANSITIONS, type OrderStatus } from '@sweets/types';
+import { ORDER_STATUSES, type OrderStatus } from '@sweets/types';
 import { Badge, Button, Empty, PageHeader, Table, Td, fmtDate } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 
@@ -87,8 +89,19 @@ export default function OrdersPage() {
           {data.items.map((o) => (
             <tr key={o.id}>
               <Td className="font-mono text-xs">
-                {o.orderNumber}
-                <div className="mt-1 text-slate-500">{o.fulfillment.toLowerCase()}</div>
+                <Link
+                  href={`/orders/${o.id}`}
+                  className="font-semibold text-brand-700 hover:underline"
+                >
+                  {o.orderNumber}
+                </Link>
+                <div className="mt-1 font-sans text-slate-500">
+                  {o.fulfillment === 'PICKUP'
+                    ? 'Store pickup'
+                    : o.address
+                      ? `${o.address.city} ${o.address.pincode}`
+                      : 'Delivery'}
+                </div>
               </Td>
               <Td>
                 {o.customer?.name}
@@ -110,10 +123,10 @@ export default function OrdersPage() {
               <Td className="text-xs text-slate-500">{fmtDate(o.createdAt)}</Td>
               <Td>
                 <div className="flex flex-wrap gap-1.5">
-                  {ORDER_STATUS_TRANSITIONS[o.status].map((to) => (
+                  {nextActions(o.status, o.fulfillment).map(({ to, label: actionLabel }) => (
                     <Button
                       key={to}
-                      variant={to === 'CANCELLED' || to === 'REFUNDED' ? 'danger' : 'secondary'}
+                      variant={to === 'CANCELLED' ? 'danger' : 'secondary'}
                       disabled={update.isPending}
                       onClick={() => {
                         if (
@@ -124,7 +137,7 @@ export default function OrdersPage() {
                         update.mutate({ id: o.id, to });
                       }}
                     >
-                      {label(to)}
+                      {actionLabel}
                     </Button>
                   ))}
                 </div>

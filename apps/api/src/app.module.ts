@@ -17,6 +17,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { EngagementModule } from './modules/engagement/engagement.module';
+import { AccountModule } from './modules/account/account.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { EngagementModule } from './modules/engagement/engagement.module';
     VendorsModule,
     DashboardModule,
     EngagementModule,
+    AccountModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

@@ -28,6 +28,27 @@ const envSchema = z.object({
   STOREFRONT_REVALIDATE_URL: z.url().optional(),
   /** Shared with the storefront's REVALIDATE_SECRET. */
   REVALIDATE_SECRET: z.string().min(16).optional(),
+
+  // Seller details printed on GST tax invoices. PLACEHOLDERS: replace with the client's
+  // registered details before issuing real invoices.
+  SELLER_LEGAL_NAME: z.string().min(1).default('Mithai House Foods Pvt. Ltd. (placeholder)'),
+  SELLER_TRADE_NAME: z.string().min(1).default('Mithai House'),
+  SELLER_GSTIN: z.string().length(15).default('27AAAAA0000A1Z5'),
+  SELLER_ADDRESS: z
+    .string()
+    .min(1)
+    .default('Shop No. 1, Main Road, Thane West, Maharashtra 400601'),
+  /** State for CGST+SGST vs IGST, and its 2-digit GST state code. */
+  SELLER_STATE: z.string().min(1).default('Maharashtra'),
+  SELLER_STATE_CODE: z.string().length(2).default('27'),
+  SELLER_FSSAI: z.string().default('XXXXXXXXXXXXXX'),
+  SELLER_PHONE: z.string().default('+91 98765 43210'),
+  SELLER_EMAIL: z.string().default('hello@example.com'),
+  /** Invoice numbers look like "<prefix>/26-27/00042" (max 16 characters for GST). */
+  INVOICE_PREFIX: z
+    .string()
+    .regex(/^[A-Z0-9]{1,5}$/)
+    .default('MH'),
 });
 
 export type Env = z.infer<typeof envSchema>;

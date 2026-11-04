@@ -17,9 +17,14 @@ export const site = {
   delivery: {
     /** Shown in the header and on product pages. */
     eta: '60–90 min',
+    /** Used to estimate arrival on the order page. Keep in step with `eta`. */
+    etaMinutes: { min: 60, max: 90 },
     area: 'Thane & Navi Mumbai',
     sameDayCutoff: '2 pm',
+    /** 24-hour clock; orders after this are delivered the next morning. */
+    sameDayCutoffHour: 14,
     pickupReady: 'about 1 hour',
+    pickupReadyMinutes: 60,
   },
   contact: {
     phone: '+91 98765 43210',

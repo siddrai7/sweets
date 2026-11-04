@@ -73,6 +73,10 @@ packages/
 first** (`InventoryService.allocateFifo`). Expired batches are never sold, and the ERP lists
 batches expiring within 48 h so they can be discounted or written off.
 
+**Low stock is per pack size.** Each variant has a `lowStockThreshold` (set in the product
+editor). `InventoryService.lowStock()` returns active sizes at or below it, most urgent first;
+the ERP shows them on the Inventory page, the dashboard and as a sidebar badge.
+
 **Every stock change is a ledger row.** `StockMovement` is append-only (PRODUCTION, PURCHASE, SALE,
 RETURN, ADJUSTMENT, WASTAGE, TRANSFER). Batch quantities are the running result, which gives a
 full audit trail for wastage and theft questions.
@@ -97,6 +101,19 @@ stock on cancel, mark COD collected on delivery) and writes `OrderStatusEvent` h
 PENDING_PAYMENT → CONFIRMED → PREPARING → READY → OUT_FOR_DELIVERY → DELIVERED → REFUNDED
         └──────────────┴────────────┴────────┴──→ CANCELLED
 ```
+
+**Invoices.** A GST tax invoice is issued inside the `DELIVERED` transition: the next number
+in the financial year's `InvoiceSequence` (`MH/26-27/00042`), so numbers are gapless and never
+reused. `InvoicesService` renders it as printable HTML (`GET /orders/:id/invoice`): taxable value
+is backed out of each tax-inclusive line, split CGST+SGST within the seller's state or IGST
+otherwise, with HSN codes snapshotted on the order line. Seller details come from `SELLER_*` in
+the API env (placeholders until the client confirms them).
+
+**Returns and refunds.** Sweets are perishable, so nothing is restocked. A customer can report a
+problem (`ReturnRequest`) within 24 hours of delivery; staff approve with a refund amount and
+method, or reject with a reason, and can also record a refund directly. Refunds are capped at
+what's left of the order total; when they cover it all, `ReturnsService` moves the order to
+`REFUNDED` via `OrdersService`. `REFUNDED` can't be set by hand.
 
 **Recipes (bill of materials)** are modelled (`RecipeItem`: raw material quantity per unit of a
 variant) but not yet used to auto-deduct raw materials on production. That is Phase 2.
@@ -131,10 +148,21 @@ float math on the server; use `Prisma.Decimal`. Frontends format it with `format
 | `/shop`, `/shop/[category]`, `/search`                           | Server-rendered per request (filters live in the URL) |
 | `/sitemap.xml`                                                   | Regenerated hourly from the catalog                   |
 | `/cart`, `/checkout`, `/account/*`, `/login`                     | Client-side, excluded in `robots.txt`                 |
+| `/account/orders/[number]`                                       | Order confirmation / detail (client, signed in)       |
 
 Structured data: `Organization` (every page), `Product` + `Offer` (product pages, with price and
 stock), `BreadcrumbList` (shop and product pages). Product and category pages set canonical URLs.
 If the API is unreachable, pages render an empty state instead of failing (`safe()` in `lib/api.ts`).
+
+**Cart across devices.** Signed out, the cart lives in `localStorage`. Signed in, the account
+holds it (`CartItem`: variant + quantity only, always returned with live prices and stock via
+`/me/cart`). Signing in merges the browser cart into the account (larger quantity wins, so it's
+idempotent); every change is saved with a short debounce; returning to the tab refreshes from the
+account; placing an order removes the bought items; signing out clears the device only. Logic is
+in `lib/cart.tsx`.
+
+**Saved addresses.** `/me/addresses` (max 10, one default, duplicates collapse). Checkout
+preselects the default and can save a new address via `saveAddress` on the order.
 
 **Catalog freshness.** Every catalog read carries the `catalog` cache tag. After any product or
 category write, the API (`StorefrontCacheService`) POSTs to the storefront's `/api/revalidate`
@@ -177,10 +205,15 @@ implemented. To add Razorpay:
 
 - [x] Auth + RBAC, catalog, batch inventory, orders with stock reservation, COD
 - [x] Storefront: catalog, product SEO, cart, checkout, order history
+- [x] Cart synced to the account across devices, saved addresses, order confirmation page
+- [x] ERP order detail (address, timeline, packing slip), GST invoices, returns and refunds
 - [x] ERP: dashboard, order processing, stock and expiry, PO workflow, vendors
 - [x] ERP user management: add team and vendor logins, edit roles, reset passwords, deactivate
 - [x] ERP catalog: create/edit products, pack sizes and prices, categories; archive/restore
-- [ ] ERP forms: create purchase orders, vendors
+- [x] ERP vendors: onboarding, edit, deactivate (blocks their logins), vendor logins from the row
+- [x] Low-stock alerts: per-size alert levels, Inventory panel with one-click restock, dashboard
+      list, sidebar badge
+- [ ] ERP forms: create purchase orders
 - [ ] Online payments (Razorpay) + webhook + unpaid-order expiry job
 - [ ] Image upload (S3/R2 presigned URLs)
 - [ ] Order notifications (SMS/WhatsApp) via BullMQ on Redis

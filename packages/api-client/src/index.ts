@@ -1,11 +1,14 @@
 import type {
   AddStockBatchInput,
+  ApproveReturnInput,
   AdjustStockInput,
   AuthResponse,
   AuthUser,
   Category,
   CategoryInput,
   CategoryUpdateInput,
+  CartItemsInput,
+  CartView,
   ContactMessageInput,
   CreateUserInput,
   DashboardStats,
@@ -27,12 +30,20 @@ import type {
   PurchaseOrderStatus,
   RawMaterial,
   RegisterInput,
+  ReturnQuery,
+  ReturnRequest,
+  ReturnRequestInput,
+  SavedAddress,
+  SavedAddressInput,
+  SavedAddressUpdateInput,
+  StaffRefundInput,
   StockBatch,
   StockSummaryRow,
   UpdateUserInput,
   UserQuery,
   Vendor,
   VendorInput,
+  VendorUpdateInput,
 } from '@sweets/types';
 
 /** RequestInit plus Next.js' caching options, passed straight through to fetch. */
@@ -102,7 +113,9 @@ export function createApiClient(options: ApiClientOptions) {
     }
 
     const text = await res.text();
-    const data = text ? JSON.parse(text) : undefined;
+    // JSON for API data; plain text for documents such as the HTML invoice.
+    const isJson = res.headers.get('content-type')?.includes('json') ?? true;
+    const data = text ? (isJson ? JSON.parse(text) : text) : undefined;
     if (!res.ok) throw new ApiError(res.status, data);
     return data as T;
   }
@@ -112,6 +125,7 @@ export function createApiClient(options: ApiClientOptions) {
   const post = <T>(path: string, body?: unknown) => request<T>('POST', path, { body });
   const patch = <T>(path: string, body?: unknown) => request<T>('PATCH', path, { body });
   const del = <T>(path: string) => request<T>('DELETE', path);
+  const put = <T>(path: string, body?: unknown) => request<T>('PUT', path, { body });
 
   return {
     auth: {
@@ -120,6 +134,23 @@ export function createApiClient(options: ApiClientOptions) {
       refresh: (refreshToken: string) => post<AuthResponse>('/auth/refresh', { refreshToken }),
       logout: (refreshToken: string) => post<void>('/auth/logout', { refreshToken }),
       me: () => get<AuthUser>('/auth/me'),
+    },
+    /** The signed-in user's own cart (synced across devices) and saved addresses. */
+    account: {
+      cart: () => get<CartView>('/me/cart'),
+      replaceCart: (items: CartItemsInput['items']) => put<CartView>('/me/cart', { items }),
+      mergeCart: (items: CartItemsInput['items']) => post<CartView>('/me/cart/merge', { items }),
+      addresses: () => get<SavedAddress[]>('/me/addresses'),
+      createAddress: (input: SavedAddressInput) => post<SavedAddress>('/me/addresses', input),
+      updateAddress: (id: string, input: SavedAddressUpdateInput) =>
+        patch<SavedAddress>(`/me/addresses/${id}`, input),
+      deleteAddress: (id: string) => del<void>(`/me/addresses/${id}`),
+    },
+    returns: {
+      list: (q: Partial<ReturnQuery> = {}) => get<Paginated<ReturnRequest>>('/returns', q),
+      approve: (id: string, input: ApproveReturnInput) =>
+        post<ReturnRequest>(`/returns/${id}/approve`, input),
+      reject: (id: string, note: string) => post<ReturnRequest>(`/returns/${id}/reject`, { note }),
     },
     users: {
       list: (q: Partial<UserQuery> = {}) => get<Paginated<ManagedUser>>('/users', q),
@@ -152,14 +183,26 @@ export function createApiClient(options: ApiClientOptions) {
       place: (input: PlaceOrderInput) =>
         post<{ order: Order; payment: Record<string, unknown> | null }>('/orders', input),
       list: (q: Partial<OrderQuery> = {}) => get<Paginated<Order>>('/orders', q),
-      get: (id: string) => get<Order>(`/orders/${id}`),
+      /** By id or order number. */
+      get: (idOrNumber: string) => get<Order>(`/orders/${encodeURIComponent(idOrNumber)}`),
       cancel: (id: string) => post<Order>(`/orders/${id}/cancel`),
+      /** Printable GST tax invoice as an HTML document (issued on delivery). */
+      invoiceHtml: (idOrNumber: string) =>
+        get<string>(`/orders/${encodeURIComponent(idOrNumber)}/invoice`),
+      /** Customer: report a problem with a delivered order. */
+      requestReturn: (idOrNumber: string, input: ReturnRequestInput) =>
+        post<ReturnRequest>(`/orders/${encodeURIComponent(idOrNumber)}/returns`, input),
+      /** Staff: record a refund directly. */
+      refund: (id: string, input: StaffRefundInput) =>
+        post<ReturnRequest>(`/orders/${id}/refunds`, input),
       updateStatus: (id: string, status: OrderStatus, note?: string) =>
         patch<Order>(`/orders/${id}/status`, { status, note }),
     },
     inventory: {
       locations: () => get<Location[]>('/inventory/locations'),
       summary: () => get<StockSummaryRow[]>('/inventory/summary'),
+      /** Sizes at or below their low-stock alert level, most urgent first. */
+      lowStock: () => get<StockSummaryRow[]>('/inventory/low-stock'),
       batches: (q: { variantId?: string; locationId?: string } = {}) =>
         get<StockBatch[]>('/inventory/batches', q),
       expiring: (withinHours = 48) => get<StockBatch[]>('/inventory/expiring', { withinHours }),
@@ -169,6 +212,8 @@ export function createApiClient(options: ApiClientOptions) {
     vendors: {
       list: () => get<Vendor[]>('/vendors'),
       create: (input: VendorInput) => post<Vendor>('/vendors', input),
+      /** Admin only. Deactivating signs out and blocks the vendor's logins. */
+      update: (id: string, input: VendorUpdateInput) => patch<Vendor>(`/vendors/${id}`, input),
       rawMaterials: () => get<RawMaterial[]>('/raw-materials'),
     },
     purchaseOrders: {

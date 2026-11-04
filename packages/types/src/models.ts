@@ -10,6 +10,9 @@ import type {
   PaymentProvider,
   PaymentStatus,
   PurchaseOrderStatus,
+  RefundMethod,
+  ReturnReason,
+  ReturnStatus,
   Role,
 } from './enums.js';
 
@@ -104,6 +107,7 @@ export interface OrderItem {
   unitPrice: string;
   quantity: number;
   taxRatePercent: string;
+  hsnCode: string | null;
   lineTotal: string;
 }
 
@@ -121,6 +125,29 @@ export interface OrderStatusEvent {
   status: OrderStatus;
   note: string | null;
   createdAt: string;
+  /** Who made the change; null for system changes. */
+  changedBy?: { name: string; role: Role } | null;
+}
+
+export interface ReturnRequest {
+  id: string;
+  orderId: string;
+  status: ReturnStatus;
+  reason: ReturnReason;
+  items: { orderItemId: string; quantity: number }[];
+  note: string | null;
+  requestedAmount: string;
+  refundAmount: string | null;
+  refundMethod: RefundMethod | null;
+  resolutionNote: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  createdBy?: { name: string; role: Role };
+  resolvedBy?: { name: string } | null;
+  /** On the ERP returns list. */
+  order?: Pick<Order, 'id' | 'orderNumber' | 'total' | 'fulfillment'> & {
+    customer: { name: string; phone: string | null };
+  };
 }
 
 export interface Order {
@@ -140,11 +167,46 @@ export interface Order {
   discountTotal: string;
   total: string;
   notes: string | null;
+  /** Set once the GST invoice has been issued (on delivery). */
+  invoiceNumber: string | null;
+  invoicedAt: string | null;
   items: OrderItem[];
   payments?: Payment[];
   statusHistory?: OrderStatusEvent[];
+  returns?: ReturnRequest[];
   createdAt: string;
   updatedAt: string;
+}
+
+/** A cart line with live catalog details (price and stock are always current). */
+export interface CartItemView {
+  variantId: string;
+  quantity: number;
+  productSlug: string;
+  productName: string;
+  variantLabel: string;
+  unitPrice: string;
+  mrp: string | null;
+  image: string | null;
+  /** Units sellable right now. */
+  available: number;
+}
+
+export interface CartView {
+  items: CartItemView[];
+}
+
+export interface SavedAddress {
+  id: string;
+  label: string | null;
+  name: string;
+  phone: string;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault: boolean;
 }
 
 export interface Location {
@@ -173,11 +235,16 @@ export interface StockBatch {
 
 export interface StockSummaryRow {
   variantId: string;
+  productId: string;
   sku: string;
   productName: string;
   variantLabel: string;
   available: number;
   nextExpiry: string | null;
+  /** Alert level set on the pack size in the product editor. */
+  lowStockThreshold: number;
+  /** `available <= lowStockThreshold`. */
+  isLow: boolean;
 }
 
 export interface Vendor {
@@ -189,6 +256,11 @@ export interface Vendor {
   gstin: string | null;
   address: string | null;
   isActive: boolean;
+  createdAt?: string;
+  /** Active ERP logins linked to this vendor. */
+  loginCount?: number;
+  /** Purchase orders sent or acknowledged but not yet received. */
+  openPurchaseOrders?: number;
 }
 
 export interface RawMaterial {

@@ -60,9 +60,17 @@ export class AuthService {
   }
 
   async login(input: LoginInput): Promise<AuthResponse> {
-    const user = await this.prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+      include: { vendor: { select: { isActive: true } } },
+    });
     if (!user || !user.isActive || !(await argon2.verify(user.passwordHash, input.password))) {
       throw new UnauthorizedException('Invalid email or password');
+    }
+    if (vendorInactive(user)) {
+      throw new UnauthorizedException(
+        'Your supplier account is inactive. Please contact the shop.',
+      );
     }
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     return this.issueTokens(user);
@@ -72,9 +80,14 @@ export class AuthService {
   async refresh(refreshToken: string): Promise<AuthResponse> {
     const stored = await this.prisma.refreshToken.findUnique({
       where: { tokenHash: hashToken(refreshToken) },
-      include: { user: true },
+      include: { user: { include: { vendor: { select: { isActive: true } } } } },
     });
-    if (!stored || stored.expiresAt < new Date() || !stored.user.isActive) {
+    if (
+      !stored ||
+      stored.expiresAt < new Date() ||
+      !stored.user.isActive ||
+      vendorInactive(stored.user)
+    ) {
       throw new UnauthorizedException();
     }
     if (stored.revokedAt) {
@@ -141,4 +154,9 @@ export class AuthService {
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
+}
+
+/** VENDOR logins stop working while their supplier is deactivated. */
+function vendorInactive(user: { role: Role; vendor: { isActive: boolean } | null }) {
+  return user.role === 'VENDOR' && !user.vendor?.isActive;
 }
