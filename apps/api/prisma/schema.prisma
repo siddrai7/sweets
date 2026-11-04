@@ -41,6 +41,7 @@ model User {
   orders         Order[]
   statusChanges  OrderStatusEvent[]
   stockMovements StockMovement[]
+  cartItems      CartItem[]
 
   @@index([role])
 }
@@ -75,6 +76,21 @@ model Address {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+/// A signed-in customer's cart, so it follows them across devices. Prices are never stored
+/// here: the cart is always shown with current catalog prices and stock.
+model CartItem {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, variantId])
 }
 
 // ───────────────────────────── Catalog ─────────────────────────────
@@ -151,6 +167,7 @@ model ProductVariant {
   stockMovements StockMovement[]
   orderItems     OrderItem[]
   recipe         RecipeItem[]
+  cartItems      CartItem[]
 
   @@index([productId])
 }

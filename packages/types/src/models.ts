@@ -147,6 +147,37 @@ export interface Order {
   updatedAt: string;
 }
 
+/** A cart line with live catalog details (price and stock are always current). */
+export interface CartItemView {
+  variantId: string;
+  quantity: number;
+  productSlug: string;
+  productName: string;
+  variantLabel: string;
+  unitPrice: string;
+  mrp: string | null;
+  image: string | null;
+  /** Units sellable right now. */
+  available: number;
+}
+
+export interface CartView {
+  items: CartItemView[];
+}
+
+export interface SavedAddress {
+  id: string;
+  label: string | null;
+  name: string;
+  phone: string;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault: boolean;
+}
+
 export interface Location {
   id: string;
   name: string;

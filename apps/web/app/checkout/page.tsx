@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ApiError } from '@sweets/api-client';
 import { formatMoney } from '@/lib/money';
-import type { AddressInput, FulfillmentType } from '@sweets/types';
+import type { AddressInput, FulfillmentType, SavedAddress } from '@sweets/types';
+import {
+  AddressFields,
+  addressLines,
+  emptyAddress,
+  toAddressInput,
+} from '@/components/account/address-fields';
 import { BillDetails } from '@/components/cart/cart-parts';
 import { ProductImage } from '@/components/product/product-image';
 import {
@@ -22,16 +28,6 @@ import { deliveryFeeFor } from '@/lib/pricing';
 import { useSession } from '@/lib/session';
 import { site } from '@/lib/site';
 
-const emptyAddress: AddressInput = {
-  name: '',
-  phone: '',
-  line1: '',
-  line2: '',
-  city: '',
-  state: '',
-  pincode: '',
-};
-
 export default function CheckoutPage() {
   const router = useRouter();
   const { lines, count, subtotal, savings, clear, loaded } = useCart();
@@ -40,6 +36,23 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState<AddressInput>(emptyAddress);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState<SavedAddress[] | null>(null);
+  /** A saved address id, or 'new' to type one in. */
+  const [selected, setSelected] = useState<string>('new');
+  const [saveNew, setSaveNew] = useState(true);
+
+  // Returning customers pick from their saved addresses; the default is preselected.
+  useEffect(() => {
+    if (!user) return;
+    api.account
+      .addresses()
+      .then((list) => {
+        setSaved(list);
+        const def = list.find((a) => a.isDefault) ?? list[0];
+        if (def) setSelected(def.id);
+      })
+      .catch(() => setSaved([]));
+  }, [user, api]);
 
   useEffect(() => {
     if (ready && !user) router.replace('/login?next=/checkout');
@@ -73,40 +86,25 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setError(null);
     try {
+      const savedAddress = saved?.find((a) => a.id === selected);
+      const chosen = savedAddress ? toAddressInput(savedAddress) : address;
       const { order } = await api.orders.place({
         items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
         fulfillment,
         address:
-          fulfillment === 'DELIVERY'
-            ? { ...address, line2: address.line2 || undefined }
-            : undefined,
+          fulfillment === 'DELIVERY' ? { ...chosen, line2: chosen.line2 || undefined } : undefined,
+        saveAddress: fulfillment === 'DELIVERY' && !savedAddress && saveNew,
         paymentProvider: 'COD',
         channel: 'WEB',
       });
       clear();
-      router.push(`/account/orders?placed=${order.orderNumber}`);
+      router.push(`/account/orders/${order.orderNumber}?placed=1`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong, please try again.');
     } finally {
       setSubmitting(false);
     }
   }
-
-  const field = (
-    key: keyof AddressInput,
-    label: string,
-    props: React.InputHTMLAttributes<HTMLInputElement> = {},
-  ) => (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-bold text-cocoa-soft">{label}</span>
-      <input
-        {...props}
-        value={address[key] ?? ''}
-        onChange={(e) => setAddress({ ...address, [key]: e.target.value })}
-        className="input-field"
-      />
-    </label>
-  );
 
   const submitLabel = submitting ? 'Placing order…' : `Place order · ${formatMoney(total)}`;
 
@@ -166,33 +164,79 @@ export default function CheckoutPage() {
 
           <Step n={2} title={fulfillment === 'DELIVERY' ? 'Delivery address' : 'Pickup from'}>
             {fulfillment === 'DELIVERY' ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {field('name', 'Full name', { required: true, autoComplete: 'name' })}
-                {field('phone', 'Mobile number', {
-                  required: true,
-                  inputMode: 'tel',
-                  autoComplete: 'tel',
-                })}
-                <div className="sm:col-span-2">
-                  {field('line1', 'Flat, building, street', {
-                    required: true,
-                    autoComplete: 'address-line1',
-                  })}
-                </div>
-                <div className="sm:col-span-2">
-                  {field('line2', 'Landmark (optional)', { autoComplete: 'address-line2' })}
-                </div>
-                {field('pincode', 'Pincode', {
-                  required: true,
-                  inputMode: 'numeric',
-                  pattern: '\\d{6}',
-                  maxLength: 6,
-                  autoComplete: 'postal-code',
-                })}
-                {field('city', 'City', { required: true, autoComplete: 'address-level2' })}
-                <div className="sm:col-span-2">
-                  {field('state', 'State', { required: true, autoComplete: 'address-level1' })}
-                </div>
+              <div className="space-y-3">
+                {saved === null && (
+                  <div className="h-20 animate-pulse rounded-2xl bg-brand-100" aria-hidden />
+                )}
+                {!!saved?.length && (
+                  <div className="grid gap-2.5" role="radiogroup" aria-label="Saved addresses">
+                    {saved.map((a) => {
+                      const on = selected === a.id;
+                      return (
+                        <button
+                          type="button"
+                          key={a.id}
+                          role="radio"
+                          aria-checked={on}
+                          onClick={() => setSelected(a.id)}
+                          className={`relative flex gap-3 rounded-2xl border bg-white p-4 text-left text-sm transition ${on ? 'border-cocoa ring-1 ring-cocoa' : 'border-brand-200 hover:border-cocoa/40'}`}
+                        >
+                          <span
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${on ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-300'}`}
+                          >
+                            {on && <CheckIcon size={11} strokeWidth={3} />}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="flex flex-wrap items-center gap-2 font-bold">
+                              {a.label ?? a.name}
+                              {a.isDefault && (
+                                <span className="rounded bg-brand-100 px-1.5 py-0.5 text-[0.62rem] uppercase tracking-wider text-cocoa-soft">
+                                  Default
+                                </span>
+                              )}
+                            </span>
+                            <span className="block text-cocoa-soft">
+                              {a.label ? `${a.name} · ` : ''}
+                              {a.phone}
+                            </span>
+                            <span className="block text-cocoa-soft">{addressLines(a)}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={selected === 'new'}
+                      onClick={() => setSelected('new')}
+                      className={`flex items-center gap-3 rounded-2xl border border-dashed p-4 text-left text-sm font-bold transition ${selected === 'new' ? 'border-cocoa bg-white ring-1 ring-cocoa' : 'border-brand-300 text-brand-600 hover:border-cocoa/40'}`}
+                    >
+                      + Deliver to a new address
+                    </button>
+                  </div>
+                )}
+                {saved !== null && selected === 'new' && (
+                  <div className={saved.length ? 'pt-2' : ''}>
+                    <AddressFields value={address} onChange={setAddress} />
+                    <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={saveNew}
+                        onChange={(e) => setSaveNew(e.target.checked)}
+                        className="h-4 w-4 accent-brand-600"
+                      />
+                      Save this address for next time
+                    </label>
+                  </div>
+                )}
+                {!!saved?.length && (
+                  <Link
+                    href="/account/addresses"
+                    className="inline-block text-xs font-bold text-brand-600 hover:underline"
+                  >
+                    Manage addresses
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="flex gap-3 rounded-2xl bg-brand-50 p-4 text-sm ring-1 ring-brand-200">

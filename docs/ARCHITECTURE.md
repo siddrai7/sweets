@@ -135,10 +135,21 @@ float math on the server; use `Prisma.Decimal`. Frontends format it with `format
 | `/shop`, `/shop/[category]`, `/search`                           | Server-rendered per request (filters live in the URL) |
 | `/sitemap.xml`                                                   | Regenerated hourly from the catalog                   |
 | `/cart`, `/checkout`, `/account/*`, `/login`                     | Client-side, excluded in `robots.txt`                 |
+| `/account/orders/[number]`                                       | Order confirmation / detail (client, signed in)       |
 
 Structured data: `Organization` (every page), `Product` + `Offer` (product pages, with price and
 stock), `BreadcrumbList` (shop and product pages). Product and category pages set canonical URLs.
 If the API is unreachable, pages render an empty state instead of failing (`safe()` in `lib/api.ts`).
+
+**Cart across devices.** Signed out, the cart lives in `localStorage`. Signed in, the account
+holds it (`CartItem`: variant + quantity only, always returned with live prices and stock via
+`/me/cart`). Signing in merges the browser cart into the account (larger quantity wins, so it's
+idempotent); every change is saved with a short debounce; returning to the tab refreshes from the
+account; placing an order removes the bought items; signing out clears the device only. Logic is
+in `lib/cart.tsx`.
+
+**Saved addresses.** `/me/addresses` (max 10, one default, duplicates collapse). Checkout
+preselects the default and can save a new address via `saveAddress` on the order.
 
 **Catalog freshness.** Every catalog read carries the `catalog` cache tag. After any product or
 category write, the API (`StorefrontCacheService`) POSTs to the storefront's `/api/revalidate`
@@ -181,6 +192,7 @@ implemented. To add Razorpay:
 
 - [x] Auth + RBAC, catalog, batch inventory, orders with stock reservation, COD
 - [x] Storefront: catalog, product SEO, cart, checkout, order history
+- [x] Cart synced to the account across devices, saved addresses, order confirmation page
 - [x] ERP: dashboard, order processing, stock and expiry, PO workflow, vendors
 - [x] ERP user management: add team and vendor logins, edit roles, reset passwords, deactivate
 - [x] ERP catalog: create/edit products, pack sizes and prices, categories; archive/restore

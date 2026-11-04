@@ -6,6 +6,8 @@ import type {
   Category,
   CategoryInput,
   CategoryUpdateInput,
+  CartItemsInput,
+  CartView,
   ContactMessageInput,
   CreateUserInput,
   DashboardStats,
@@ -27,6 +29,9 @@ import type {
   PurchaseOrderStatus,
   RawMaterial,
   RegisterInput,
+  SavedAddress,
+  SavedAddressInput,
+  SavedAddressUpdateInput,
   StockBatch,
   StockSummaryRow,
   UpdateUserInput,
@@ -113,6 +118,7 @@ export function createApiClient(options: ApiClientOptions) {
   const post = <T>(path: string, body?: unknown) => request<T>('POST', path, { body });
   const patch = <T>(path: string, body?: unknown) => request<T>('PATCH', path, { body });
   const del = <T>(path: string) => request<T>('DELETE', path);
+  const put = <T>(path: string, body?: unknown) => request<T>('PUT', path, { body });
 
   return {
     auth: {
@@ -121,6 +127,17 @@ export function createApiClient(options: ApiClientOptions) {
       refresh: (refreshToken: string) => post<AuthResponse>('/auth/refresh', { refreshToken }),
       logout: (refreshToken: string) => post<void>('/auth/logout', { refreshToken }),
       me: () => get<AuthUser>('/auth/me'),
+    },
+    /** The signed-in user's own cart (synced across devices) and saved addresses. */
+    account: {
+      cart: () => get<CartView>('/me/cart'),
+      replaceCart: (items: CartItemsInput['items']) => put<CartView>('/me/cart', { items }),
+      mergeCart: (items: CartItemsInput['items']) => post<CartView>('/me/cart/merge', { items }),
+      addresses: () => get<SavedAddress[]>('/me/addresses'),
+      createAddress: (input: SavedAddressInput) => post<SavedAddress>('/me/addresses', input),
+      updateAddress: (id: string, input: SavedAddressUpdateInput) =>
+        patch<SavedAddress>(`/me/addresses/${id}`, input),
+      deleteAddress: (id: string) => del<void>(`/me/addresses/${id}`),
     },
     users: {
       list: (q: Partial<UserQuery> = {}) => get<Paginated<ManagedUser>>('/users', q),
@@ -153,7 +170,8 @@ export function createApiClient(options: ApiClientOptions) {
       place: (input: PlaceOrderInput) =>
         post<{ order: Order; payment: Record<string, unknown> | null }>('/orders', input),
       list: (q: Partial<OrderQuery> = {}) => get<Paginated<Order>>('/orders', q),
-      get: (id: string) => get<Order>(`/orders/${id}`),
+      /** By id or order number. */
+      get: (idOrNumber: string) => get<Order>(`/orders/${encodeURIComponent(idOrNumber)}`),
       cancel: (id: string) => post<Order>(`/orders/${id}/cancel`),
       updateStatus: (id: string, status: OrderStatus, note?: string) =>
         patch<Order>(`/orders/${id}/status`, { status, note }),

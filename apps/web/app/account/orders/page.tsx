@@ -2,103 +2,36 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useState } from 'react';
-import { formatMoney } from '@/lib/money';
+import { Suspense, useEffect, useState } from 'react';
 import type { Order } from '@sweets/types';
+import { AccountHeader } from '@/components/account/account-nav';
+import { ORDER_STATUS, OrderTracker, slugify } from '@/components/account/order-status';
 import { ProductImage } from '@/components/product/product-image';
-import { CheckIcon, LogoutIcon, ReceiptIcon } from '@/components/ui/icons';
+import { ChevronRight, ReceiptIcon } from '@/components/ui/icons';
+import { deliveryEstimate } from '@/lib/delivery';
+import { formatMoney } from '@/lib/money';
 import { useSession } from '@/lib/session';
-
-const STATUS: Record<Order['status'], { label: string; tone: string }> = {
-  PENDING_PAYMENT: { label: 'Awaiting payment', tone: 'bg-saffron-100 text-saffron-600' },
-  CONFIRMED: { label: 'Confirmed', tone: 'bg-saffron-100 text-saffron-600' },
-  PREPARING: { label: 'Being prepared', tone: 'bg-saffron-100 text-saffron-600' },
-  READY: { label: 'Ready', tone: 'bg-pista-100 text-pista-600' },
-  OUT_FOR_DELIVERY: { label: 'Out for delivery', tone: 'bg-pista-100 text-pista-600' },
-  DELIVERED: { label: 'Delivered', tone: 'bg-pista-100 text-pista-700' },
-  CANCELLED: { label: 'Cancelled', tone: 'bg-brand-100 text-brand-600' },
-  REFUNDED: { label: 'Refunded', tone: 'bg-brand-100 text-cocoa-soft' },
-};
-
-/** Progress tracker stages for an active order. */
-const STAGES: { status: Order['status'][]; label: string }[] = [
-  { status: ['PENDING_PAYMENT', 'CONFIRMED'], label: 'Confirmed' },
-  { status: ['PREPARING'], label: 'Preparing' },
-  { status: ['READY', 'OUT_FOR_DELIVERY'], label: 'On the way' },
-  { status: ['DELIVERED'], label: 'Delivered' },
-];
-
-const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-function Tracker({ status }: { status: Order['status'] }) {
-  const current = STAGES.findIndex((s) => s.status.includes(status));
-  if (current < 0) return null;
-  return (
-    <ol className="grid grid-cols-4 gap-1.5">
-      {STAGES.map((s, i) => (
-        <li key={s.label}>
-          <span
-            className={`block h-1.5 rounded-full ${i <= current ? 'bg-pista-500' : 'bg-brand-100'}`}
-          />
-          <span
-            className={`mt-1.5 block text-[0.68rem] font-semibold ${i <= current ? 'text-cocoa' : 'text-cocoa-soft/70'}`}
-          >
-            {s.label}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
 
 function Orders() {
   const router = useRouter();
   const placed = useSearchParams().get('placed');
-  const { user, ready, api, signOut } = useSession();
+  const { user, ready, api } = useSession();
   const [orders, setOrders] = useState<Order[] | null>(null);
 
-  const load = useCallback(
-    () => api.orders.list({ pageSize: 50 }).then((r) => setOrders(r.items)),
-    [api],
-  );
+  useEffect(() => {
+    // Older confirmation links (?placed=SW-…) now open the order's own page.
+    if (placed) router.replace(`/account/orders/${placed}?placed=1`);
+  }, [placed, router]);
 
   useEffect(() => {
     if (!ready) return;
     if (!user) router.replace('/login?next=/account/orders');
-    else void load();
-  }, [ready, user, router, load]);
+    else void api.orders.list({ pageSize: 50 }).then((r) => setOrders(r.items));
+  }, [ready, user, router, api]);
 
   return (
     <div className="container-page max-w-3xl py-8 sm:py-12">
-      {placed && (
-        <div className="mb-8 flex animate-rise items-center gap-4 rounded-3xl bg-pista-50 p-5 ring-1 ring-pista-100">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pista-500 text-white">
-            <CheckIcon size={24} strokeWidth={2.5} />
-          </span>
-          <div>
-            <p className="font-display text-xl">Order placed. Thank you!</p>
-            <p className="text-sm text-cocoa-soft">
-              Order <strong className="font-mono text-cocoa">{placed}</strong> is confirmed. Our
-              kitchen will start preparing it shortly.
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">{user ? `Hello, ${user.name.split(' ')[0]}` : 'Account'}</p>
-          <h1 className="mt-2 text-4xl font-light sm:text-5xl">My orders</h1>
-        </div>
-        {user && (
-          <button
-            onClick={() => signOut().then(() => router.push('/'))}
-            className="flex items-center gap-1.5 text-sm font-semibold text-cocoa-soft hover:text-brand-600"
-          >
-            <LogoutIcon size={16} /> Sign out
-          </button>
-        )}
-      </div>
+      <AccountHeader title="My orders" />
 
       <div className="mt-8 space-y-4">
         {!orders &&
@@ -123,11 +56,13 @@ function Orders() {
         )}
 
         {orders?.map((o) => {
-          const status = STATUS[o.status];
+          const status = ORDER_STATUS[o.status];
+          const eta = deliveryEstimate(o);
           return (
-            <article
+            <Link
               key={o.id}
-              className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-brand-200 sm:p-6"
+              href={`/account/orders/${o.orderNumber}`}
+              className="group block space-y-4 rounded-3xl bg-white p-5 ring-1 ring-brand-200 transition hover:ring-brand-300 sm:p-6"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -144,7 +79,8 @@ function Orders() {
                 </span>
               </div>
 
-              <Tracker status={o.status} />
+              <OrderTracker status={o.status} fulfillment={o.fulfillment} />
+              {eta && <p className="text-xs font-semibold text-pista-600">{eta}</p>}
 
               <ul className="flex flex-wrap gap-2">
                 {o.items.map((i) => (
@@ -169,26 +105,17 @@ function Orders() {
                 ))}
               </ul>
 
-              <div className="flex items-center justify-between border-t border-brand-100 pt-4">
-                {o.status === 'PENDING_PAYMENT' || o.status === 'CONFIRMED' ? (
-                  <button
-                    onClick={() => {
-                      if (window.confirm('Cancel this order?'))
-                        void api.orders.cancel(o.id).then(load);
-                    }}
-                    className="text-sm font-semibold text-cocoa-soft underline-offset-4 hover:text-brand-600 hover:underline"
-                  >
-                    Cancel order
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <span className="text-sm">
+              <div className="flex items-center justify-between border-t border-brand-100 pt-4 text-sm">
+                <span className="flex items-center gap-1 font-semibold text-brand-600">
+                  View order details
+                  <ChevronRight size={16} className="transition group-hover:translate-x-0.5" />
+                </span>
+                <span>
                   Total{' '}
                   <strong className="ml-1 text-base tabular-nums">{formatMoney(o.total)}</strong>
                 </span>
               </div>
-            </article>
+            </Link>
           );
         })}
       </div>

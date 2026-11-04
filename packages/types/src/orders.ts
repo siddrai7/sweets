@@ -3,12 +3,16 @@ import { dateTimeSchema, indianPincodeSchema, paginationQuerySchema } from './co
 import { FULFILLMENT_TYPES, ORDER_CHANNELS, ORDER_STATUSES } from './enums.js';
 
 export const addressSchema = z.object({
-  name: z.string().min(1).max(100),
-  phone: z.string().min(8).max(15),
-  line1: z.string().min(1).max(200),
-  line2: z.string().max(200).optional(),
-  city: z.string().min(1).max(100),
-  state: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(100),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+?[\d\s-]{8,15}$/, 'Enter a valid mobile number'),
+  line1: z.string().trim().min(1).max(200),
+  /** Landmark or second line. */
+  line2: z.string().trim().max(200).nullable().optional(),
+  city: z.string().trim().min(1).max(100),
+  state: z.string().trim().min(1).max(100),
   pincode: indianPincodeSchema,
 });
 export type AddressInput = z.infer<typeof addressSchema>;
@@ -30,6 +34,8 @@ export const placeOrderSchema = z
     paymentProvider: z.enum(['COD', 'RAZORPAY', 'STRIPE']).default('COD'),
     channel: z.enum(ORDER_CHANNELS).default('WEB'),
     notes: z.string().max(500).optional(),
+    /** Also add the delivery address to the customer's saved addresses. */
+    saveAddress: z.boolean().optional(),
   })
   .refine((o) => o.fulfillment === 'PICKUP' || !!o.address, {
     message: 'Address is required for delivery orders',
