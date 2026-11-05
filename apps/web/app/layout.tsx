@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header';
 import { CartToast, MobileNav } from '@/components/layout/mobile-nav';
 import { CartProvider } from '@/lib/cart';
 import { PincodeProvider } from '@/lib/pincode';
+import { WishlistProvider } from '@/lib/wishlist';
 import { SessionProvider } from '@/lib/session';
 import { site } from '@/lib/site';
 import './globals.css';
@@ -69,14 +70,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <SessionProvider>
           <PincodeProvider>
-            <CartProvider>
-              <Header />
-              <main className="flex-1">{children}</main>
-              <Footer />
-              <MobileNav />
-              <CartDrawer />
-              <CartToast />
-            </CartProvider>
+            <WishlistProvider>
+              <CartProvider>
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <MobileNav />
+                <CartDrawer />
+                <CartToast />
+              </CartProvider>
+            </WishlistProvider>
           </PincodeProvider>
         </SessionProvider>
       </body>

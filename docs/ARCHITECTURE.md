@@ -134,6 +134,24 @@ sign in. The customer gets a private tracking link (`/orders/track/<number>?t=<t
 token's SHA-256 is stored (`Order.guestTokenHash`). Guests can't sign in until they set a
 password, which turns the record into a normal account.
 
+**Coupons.** `Coupon` codes (percent with optional cap, flat, or free delivery; minimum order,
+dates, total and per-customer limits, first order only) are managed on the ERP _Coupons_ page.
+`CouponsService.evaluate()` checks every rule; `OrdersService.place()` splits the discount across
+lines in proportion (`OrderItem.discount`, see `coupon-math.ts`), so GST is charged on what the
+customer actually pays and the invoice's taxable values shrink to match. Redemptions are counted
+atomically and given back when an order is cancelled.
+
+**Reviews.** Only customers with a delivered order containing the product can review it; reviews
+wait for approval on the ERP _Reviews_ page. `ReviewsService` keeps `Product.ratingAvg` and
+`ratingCount` in sync and pings the storefront cache. Product pages emit `aggregateRating` JSON-LD.
+
+**Shopper features.** Wishlists are stored per customer (`WishlistItem`; guests keep one in
+localStorage that merges on sign-in). "Notify me" creates a `StockAlert` for a sold-out size;
+the ERP inventory page shows how many customers are waiting. "Frequently bought together"
+(`CatalogService.boughtTogether`) uses co-purchase counts from orders, topped up with featured
+products from other categories. Recently viewed and "Order again" are client-side. Gift orders
+store a card message and gift-wrap flag; the ERP packing slip hides prices for them.
+
 **Recipes (bill of materials)** are modelled (`RecipeItem`: raw material quantity per unit of a
 variant) but not yet used to auto-deduct raw materials on production. That is Phase 2.
 

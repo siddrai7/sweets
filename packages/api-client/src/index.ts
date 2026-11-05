@@ -1,4 +1,15 @@
 import type {
+  Coupon,
+  CouponCheckInput,
+  CouponInput,
+  CouponPreview,
+  CouponUpdateInput,
+  ProductReviews,
+  Review,
+  ReviewEligibility,
+  ReviewInput,
+  ReviewModerationInput,
+  ReviewQuery,
   BulkServiceAreaInput,
   DeliverySettings,
   DeliverySlot,
@@ -155,6 +166,40 @@ export function createApiClient(options: ApiClientOptions) {
       updateAddress: (id: string, input: SavedAddressUpdateInput) =>
         patch<SavedAddress>(`/me/addresses/${id}`, input),
       deleteAddress: (id: string) => del<void>(`/me/addresses/${id}`),
+      wishlist: () => get<Product[]>('/me/wishlist'),
+      wishlistIds: () => get<string[]>('/me/wishlist/ids'),
+      addToWishlist: (productId: string) => put<string[]>(`/me/wishlist/${productId}`, {}),
+      removeFromWishlist: (productId: string) => del<string[]>(`/me/wishlist/${productId}`),
+    },
+    coupons: {
+      check: (input: CouponCheckInput) => post<CouponPreview>('/coupons/check', input),
+      list: () => get<Coupon[]>('/coupons'),
+      create: (input: CouponInput) => post<Coupon>('/coupons', input),
+      update: (id: string, input: CouponUpdateInput) => patch<Coupon>(`/coupons/${id}`, input),
+    },
+    reviews: {
+      forProduct: (idOrSlug: string, page = 1, init?: FetchInit) =>
+        get<ProductReviews>(`/products/${encodeURIComponent(idOrSlug)}/reviews`, { page }, init),
+      mine: (idOrSlug: string) =>
+        get<ReviewEligibility>(`/products/${encodeURIComponent(idOrSlug)}/reviews/mine`),
+      write: (idOrSlug: string, input: ReviewInput) =>
+        put<Review>(`/products/${encodeURIComponent(idOrSlug)}/reviews/mine`, input),
+      list: (q: Partial<ReviewQuery> = {}) => get<Paginated<Review>>('/reviews', q),
+      moderate: (id: string, input: ReviewModerationInput) =>
+        patch<Review>(`/reviews/${id}`, input),
+    },
+    shopper: {
+      boughtTogether: (idOrSlug: string, init?: FetchInit) =>
+        get<Product[]>(`/catalog/together/${encodeURIComponent(idOrSlug)}`, undefined, init),
+      productsByIds: (ids: string[]) => get<Product[]>('/catalog/by-ids', { ids: ids.join(',') }),
+      productsForVariants: (variantIds: string[]) =>
+        get<Product[]>('/catalog/by-variants', { ids: variantIds.join(',') }),
+      notifyWhenBack: (variantId: string, email: string) =>
+        post<{ ok: true }>('/stock-alerts', { variantId, email }),
+      stockAlerts: () =>
+        get<
+          { variantId: string; productName: string; label: string; sku: string; waiting: number }[]
+        >('/stock-alerts'),
     },
     delivery: {
       check: (pincode: string) => get<PincodeCheck>('/delivery/check', { pincode }),

@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ApiError } from '@sweets/api-client';
 import { formatMoney } from '@/lib/money';
-import type { AddressInput, DeliverySlot, FulfillmentType, SavedAddress } from '@sweets/types';
+import type {
+  AddressInput,
+  CouponPreview,
+  DeliverySlot,
+  FulfillmentType,
+  SavedAddress,
+} from '@sweets/types';
 import {
   AddressFields,
   addressLines,
@@ -18,6 +24,7 @@ import {
   CardIcon,
   CashIcon,
   CheckIcon,
+  GiftIcon,
   ChevronRight,
   LockIcon,
   StoreIcon,
@@ -46,6 +53,9 @@ export default function CheckoutPage() {
   const [contact, setContact] = useState({ name: '', email: '', phone: '' });
   const [slots, setSlots] = useState<DeliverySlot[] | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
+  const [coupon, setCoupon] = useState<CouponPreview | null>(null);
+  const [couponNote, setCouponNote] = useState<string | null>(null);
+  const [gift, setGift] = useState({ isGift: false, message: '', wrap: true });
   const { current: pin, check: checkPincode } = usePincode();
   const [pinStatus, setPinStatus] = useState<{ pincode: string; serviceable: boolean } | null>(
     null,
@@ -73,6 +83,30 @@ export default function CheckoutPage() {
       })
       .catch(() => setSaved([]));
   }, [user, api]);
+
+  // Re-check an applied coupon whenever the cart changes (minimum order, caps…).
+  const cartKey = lines.map((l) => `${l.variantId}:${l.quantity}`).join(',');
+  const appliedCode = coupon?.code;
+  useEffect(() => {
+    if (!appliedCode || !cartKey) return;
+    browserApi.coupons
+      .check({
+        code: appliedCode,
+        items: cartKey.split(',').map((x) => {
+          const [variantId, q] = x.split(':');
+          return { variantId: variantId!, quantity: Number(q) };
+        }),
+        fulfillment,
+        email: user ? undefined : contact.email || undefined,
+      })
+      .then(setCoupon)
+      .catch((e) => {
+        setCoupon(null);
+        setCouponNote(e instanceof ApiError ? e.message : null);
+      });
+    // contact.email is read only when re-checking; typing shouldn't trigger requests.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedCode, cartKey, fulfillment, user]);
 
   // Guests start from the pincode they checked in the header.
   useEffect(() => {
@@ -119,7 +153,9 @@ export default function CheckoutPage() {
     );
   }
 
-  const total = subtotal + deliveryFeeFor(subtotal, fulfillment);
+  const couponOff = Number(coupon?.discount ?? 0);
+  const total =
+    subtotal - couponOff + (coupon?.freeDelivery ? 0 : deliveryFeeFor(subtotal, fulfillment));
   const needsSlot = fulfillment === 'DELIVERY' && !!slots?.length;
   const chosenSlot = slots?.find((s) => s.start === slot && s.available);
   const unserviceable = fulfillment === 'DELIVERY' && pinStatus?.serviceable === false;
@@ -150,6 +186,10 @@ export default function CheckoutPage() {
         deliverySlotStart: isDelivery && chosenSlot ? new Date(chosenSlot.start) : undefined,
         deliverySlotEnd: isDelivery && chosenSlot ? new Date(chosenSlot.end) : undefined,
         saveAddress: !!user && isDelivery && !savedAddress && saveNew,
+        couponCode: coupon?.code,
+        isGift: gift.isGift || undefined,
+        giftMessage: gift.isGift ? gift.message.trim() || undefined : undefined,
+        giftWrap: gift.isGift ? gift.wrap : undefined,
         paymentProvider: 'COD' as const,
         channel: 'WEB' as const,
       };
@@ -375,6 +415,58 @@ export default function CheckoutPage() {
             </Step>
           )}
 
+          <section className="rounded-3xl bg-white p-5 ring-1 ring-brand-200 sm:p-6">
+            <label className="flex cursor-pointer items-center gap-3.5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-saffron-100 text-saffron-600">
+                <GiftIcon size={20} />
+              </span>
+              <span className="flex-1">
+                <span className="block font-bold">Send as a gift</span>
+                <span className="text-xs text-cocoa-soft">
+                  Add a card message. Prices are left off the packing slip.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={gift.isGift}
+                onChange={(e) => setGift((g) => ({ ...g, isGift: e.target.checked }))}
+                className="h-5 w-5 accent-brand-600"
+              />
+            </label>
+            {gift.isGift && (
+              <div className="mt-4 space-y-3">
+                <label className="block">
+                  <span className="mb-1.5 flex justify-between text-xs font-bold text-cocoa-soft">
+                    Message for the card
+                    <span className="font-normal">{gift.message.length}/300</span>
+                  </span>
+                  <textarea
+                    rows={3}
+                    maxLength={300}
+                    value={gift.message}
+                    onChange={(e) => setGift((g) => ({ ...g, message: e.target.value }))}
+                    placeholder="Happy Diwali! With love, Ananya"
+                    className="input-field"
+                  />
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={gift.wrap}
+                    onChange={(e) => setGift((g) => ({ ...g, wrap: e.target.checked }))}
+                    className="h-4 w-4 accent-brand-600"
+                  />
+                  Festive gift wrap <span className="font-semibold text-pista-600">(free)</span>
+                </label>
+                {fulfillment === 'DELIVERY' && (
+                  <p className="text-xs text-cocoa-soft">
+                    Tip: put the recipient’s name and phone in the delivery address.
+                  </p>
+                )}
+              </div>
+            )}
+          </section>
+
           <Step n={needsSlot ? 4 : 3} title="Payment">
             <div className="space-y-2.5">
               <div className="flex items-center gap-3.5 rounded-2xl border border-cocoa bg-white p-4 ring-1 ring-cocoa">
@@ -439,7 +531,37 @@ export default function CheckoutPage() {
             ))}
           </ul>
           <div className="border-t border-brand-100 pt-4">
-            <BillDetails subtotal={subtotal} savings={savings} fulfillment={fulfillment} />
+            <CouponField
+              applied={coupon}
+              note={couponNote}
+              onApply={async (code) => {
+                setCouponNote(null);
+                try {
+                  setCoupon(
+                    await browserApi.coupons.check({
+                      code,
+                      items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
+                      fulfillment,
+                      email: user ? undefined : contact.email || undefined,
+                    }),
+                  );
+                } catch (e) {
+                  setCouponNote(e instanceof ApiError ? e.message : 'Couldn’t check that code.');
+                }
+              }}
+              onRemove={() => {
+                setCoupon(null);
+                setCouponNote(null);
+              }}
+            />
+          </div>
+          <div className="border-t border-brand-100 pt-4">
+            <BillDetails
+              subtotal={subtotal}
+              savings={savings}
+              fulfillment={fulfillment}
+              coupon={coupon}
+            />
           </div>
           {unserviceable && (
             <p
@@ -564,6 +686,76 @@ function SlotPicker({
             );
           })}
       </div>
+    </div>
+  );
+}
+
+function CouponField({
+  applied,
+  note,
+  onApply,
+  onRemove,
+}: {
+  applied: CouponPreview | null;
+  note: string | null;
+  onApply: (code: string) => Promise<void>;
+  onRemove: () => void;
+}) {
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (applied) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-2xl bg-pista-50 px-4 py-3 text-sm ring-1 ring-pista-100">
+        <span>
+          <span className="font-bold text-pista-700">{applied.code} applied</span>
+          <span className="block text-xs text-cocoa-soft">
+            {applied.freeDelivery
+              ? 'Free delivery on this order'
+              : `You save ${formatMoney(applied.discount)}`}
+            {applied.description ? ` · ${applied.description}` : ''}
+          </span>
+        </span>
+        <button type="button" onClick={onRemove} className="text-xs font-bold text-brand-600">
+          Remove
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div className="flex gap-2">
+        <label className="flex-1">
+          <span className="sr-only">Coupon code</span>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s/g, ''))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                (
+                  e.currentTarget.closest('div')?.querySelector('button') as HTMLButtonElement
+                )?.click();
+              }
+            }}
+            maxLength={20}
+            placeholder="Coupon code"
+            className="input-field uppercase tracking-wider"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={!code || busy}
+          onClick={async () => {
+            setBusy(true);
+            await onApply(code);
+            setBusy(false);
+          }}
+          className="btn-ghost rounded-xl px-4"
+        >
+          {busy ? '…' : 'Apply'}
+        </button>
+      </div>
+      {note && <p className="mt-2 text-xs font-semibold text-brand-600">{note}</p>}
     </div>
   );
 }

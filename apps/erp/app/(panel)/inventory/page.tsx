@@ -15,6 +15,7 @@ export default function InventoryPage() {
     queryKey: ['inventory', 'expiring'],
     queryFn: () => api.inventory.expiring(48),
   });
+  const waiting = useQuery({ queryKey: ['stock-alerts'], queryFn: api.shopper.stockAlerts });
   const lowStock = useQuery({
     queryKey: ['inventory', 'low-stock'],
     queryFn: api.inventory.lowStock,
@@ -80,6 +81,25 @@ export default function InventoryPage() {
       <PageHeader title="Inventory" />
 
       <LowStockPanel rows={lowStock.data} loading={lowStock.isLoading} onRestock={restock} />
+      {!!waiting.data?.length && (
+        <div className="mb-8 rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <h2 className="font-medium text-blue-900">Customers waiting for a restock</h2>
+          <p className="mb-2 text-xs text-blue-800">
+            They asked to be emailed when these sizes are back. Making a batch notifies them.
+          </p>
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {waiting.data.map((w) => (
+              <li
+                key={w.variantId}
+                className="rounded-lg bg-white px-3 py-1.5 ring-1 ring-blue-100"
+              >
+                {w.productName} · {w.label}{' '}
+                <span className="font-semibold text-blue-800">{w.waiting} waiting</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <Card className="mb-6">
         <h2 className="mb-3 font-medium">Record today&apos;s production</h2>

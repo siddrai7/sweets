@@ -24,6 +24,7 @@ import {
   CheckIcon,
   ClockIcon,
   PinIcon,
+  RepeatIcon,
   StoreIcon,
   WhatsAppIcon,
 } from '@/components/ui/icons';
@@ -31,6 +32,8 @@ import { deliveryEstimate } from '@/lib/delivery';
 import { openDocument } from '@/lib/documents';
 import { formatMoney } from '@/lib/money';
 import { browserApi } from '@/lib/browser-api';
+import { useCart } from '@/lib/cart';
+import { isAvailable, toCartLine } from '@/lib/pricing';
 import { useSession } from '@/lib/session';
 import { site } from '@/lib/site';
 
@@ -63,6 +66,38 @@ export function OrderDetail({
   const [cancelling, setCancelling] = useState(false);
   const [copied, setCopied] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const { add, openCart } = useCart();
+  const [reordering, setReordering] = useState<string | null>(null);
+
+  /** Puts everything from this order that's still on sale back in the cart. */
+  async function orderAgain(o: Order) {
+    setReordering('Adding…');
+    try {
+      const products = await browserApi.shopper.productsForVariants(
+        o.items.map((i) => i.variantId),
+      );
+      let added = 0;
+      for (const item of o.items) {
+        const p = products.find((x) => x.variants.some((v) => v.id === item.variantId));
+        const v = p?.variants.find((x) => x.id === item.variantId);
+        if (!p || !v || !isAvailable(v)) continue;
+        add(toCartLine(p, v), Math.min(item.quantity, v.available ?? item.quantity), {
+          open: false,
+        });
+        added++;
+      }
+      setReordering(
+        added === o.items.length
+          ? null
+          : added
+            ? `${o.items.length - added} item${o.items.length - added > 1 ? 's are' : ' is'} sold out today`
+            : 'These sweets are sold out today',
+      );
+      if (added) openCart();
+    } catch {
+      setReordering('Couldn’t add the items. Please try again.');
+    }
+  }
 
   const load = useCallback(
     () =>
@@ -279,6 +314,18 @@ export function OrderDetail({
         </section>
       </div>
 
+      {order.isGift && (
+        <section className="mt-5 rounded-3xl bg-saffron-50 p-5 ring-1 ring-saffron-100 sm:p-6">
+          <h2 className="font-sans text-sm font-bold">
+            🎁 Gift order{order.giftWrap ? ' · gift wrapped' : ''}
+          </h2>
+          {order.giftMessage && (
+            <p className="mt-2 font-display text-lg italic leading-snug">“{order.giftMessage}”</p>
+          )}
+          <p className="mt-2 text-xs text-cocoa-soft">Prices are left off the packing slip.</p>
+        </section>
+      )}
+
       <section className="mt-5 rounded-3xl bg-white p-5 ring-1 ring-brand-200 sm:p-6">
         <h2 className="font-sans text-sm font-bold">
           {itemCount} item{itemCount > 1 ? 's' : ''}
@@ -309,7 +356,7 @@ export function OrderDetail({
           </div>
           {Number(order.discountTotal) > 0 && (
             <div className="flex justify-between text-pista-600">
-              <dt>Discount</dt>
+              <dt>{order.couponCode ? `Coupon ${order.couponCode}` : 'Discount'}</dt>
               <dd className="tabular-nums">− {formatMoney(order.discountTotal)}</dd>
             </div>
           )}
@@ -397,9 +444,15 @@ export function OrderDetail({
       )}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Link href="/shop" className="btn-primary">
-          Continue shopping
-        </Link>
+        {FINISHED.includes(order.status) ? (
+          <button onClick={() => orderAgain(order)} className="btn-primary">
+            <RepeatIcon size={18} /> Order again
+          </button>
+        ) : (
+          <Link href="/shop" className="btn-primary">
+            Continue shopping
+          </Link>
+        )}
         {hasInvoice && (
           <button
             onClick={() =>
@@ -432,6 +485,12 @@ export function OrderDetail({
           </button>
         )}
       </div>
+
+      {reordering && reordering !== 'Adding…' && (
+        <p className="mt-3 text-sm font-semibold text-brand-600" role="status">
+          {reordering}
+        </p>
+      )}
 
       {reporting && (
         <ReportProblemSheet

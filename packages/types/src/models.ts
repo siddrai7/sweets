@@ -2,6 +2,7 @@
  * Response shapes returned by the API. Money and decimal fields are serialised as strings.
  */
 import type {
+  CouponType,
   FulfillmentType,
   LocationType,
   MeasurementUnit,
@@ -13,6 +14,7 @@ import type {
   RefundMethod,
   ReturnReason,
   ReturnStatus,
+  ReviewStatus,
   Role,
 } from './enums.js';
 import type { Paginated } from './common.js';
@@ -97,6 +99,9 @@ export interface Product {
   allergens: string | null;
   storageInstructions: string | null;
   basePrice: string | null;
+  /** Average approved rating (1–5), null until the first approved review. */
+  ratingAvg: string | null;
+  ratingCount: number;
   variants: ProductVariant[];
   createdAt: string;
   updatedAt: string;
@@ -113,6 +118,8 @@ export interface OrderItem {
   taxRatePercent: string;
   hsnCode: string | null;
   lineTotal: string;
+  /** This line's share of the coupon discount. */
+  discount: string;
 }
 
 export interface Payment {
@@ -171,6 +178,10 @@ export interface Order {
   discountTotal: string;
   total: string;
   notes: string | null;
+  couponCode: string | null;
+  isGift: boolean;
+  giftMessage: string | null;
+  giftWrap: boolean;
   /** Set once the GST invoice has been issued (on delivery). */
   invoiceNumber: string | null;
   invoicedAt: string | null;
@@ -349,4 +360,61 @@ export interface DashboardStats {
   pendingOrders: number;
   lowStockVariants: number;
   expiringBatches: number;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description: string | null;
+  type: CouponType;
+  value: string;
+  maxDiscount: string | null;
+  minSubtotal: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  usageLimit: number | null;
+  perCustomerLimit: number | null;
+  firstOrderOnly: boolean;
+  isActive: boolean;
+  usedCount: number;
+  createdAt: string;
+}
+
+/** What a coupon would take off this cart. */
+export interface CouponPreview {
+  code: string;
+  description: string | null;
+  /** Rupees off the items (tax-inclusive). */
+  discount: string;
+  freeDelivery: boolean;
+}
+
+export interface Review {
+  id: string;
+  productId: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  status: ReviewStatus;
+  /** First name and initial, e.g. "Priya S." */
+  author: string;
+  createdAt: string;
+  /** ERP only. */
+  product?: Pick<Product, 'id' | 'name' | 'slug'>;
+  moderationNote?: string | null;
+}
+
+export interface ProductReviews {
+  items: Review[];
+  total: number;
+  average: number | null;
+  /** Count of approved reviews per star, index 0 = 1 star. */
+  distribution: [number, number, number, number, number];
+}
+
+/** Whether the signed-in customer can review a product, and their existing review. */
+export interface ReviewEligibility {
+  canReview: boolean;
+  reason: 'not-purchased' | 'already-reviewed' | null;
+  review: Review | null;
 }

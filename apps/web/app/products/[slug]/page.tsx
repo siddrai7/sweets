@@ -3,7 +3,12 @@ import { notFound } from 'next/navigation';
 import { ApiError } from '@sweets/api-client';
 import { ProductCarousel } from '@/components/product/product-carousel';
 import { ProductGallery } from '@/components/product/product-gallery';
+import { BoughtTogether } from '@/components/product/bought-together';
 import { ProductPurchase } from '@/components/product/product-purchase';
+import { RecentlyViewed } from '@/components/product/recently-viewed';
+import { Reviews } from '@/components/product/reviews';
+import { RatingSummary } from '@/components/product/stars';
+import { WishlistButton } from '@/components/product/wishlist-button';
 import { Breadcrumbs } from '@/components/shop/breadcrumbs';
 import { DropIcon, LeafIcon, ShieldIcon, SunIcon, VegMark } from '@/components/ui/icons';
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
@@ -50,7 +55,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function ProductPage({ params }: { params: Params }) {
   const product = await getProduct((await params).slug);
-  const [categories, related] = await Promise.all([
+  const [categories, related, reviews, together] = await Promise.all([
     safe(serverApi.catalog.categories(CATALOG_REVALIDATE), []),
     safe(
       serverApi.catalog.products(
@@ -59,6 +64,8 @@ export default async function ProductPage({ params }: { params: Params }) {
       ),
       null,
     ),
+    safe(serverApi.reviews.forProduct(product.slug, 1, CATALOG_REVALIDATE), null),
+    safe(serverApi.shopper.boughtTogether(product.slug, CATALOG_REVALIDATE), []),
   ]);
   const trail = categoryTrail(categories, product.categoryId);
 
@@ -72,6 +79,24 @@ export default async function ProductPage({ params }: { params: Params }) {
     sku: product.variants[0]?.sku,
     category: product.category?.name,
     brand: { '@type': 'Brand', name: site.name },
+    ...(reviews?.total &&
+      reviews.average !== null && {
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: reviews.average,
+          reviewCount: reviews.total,
+          bestRating: 5,
+          worstRating: 1,
+        },
+        review: reviews.items.slice(0, 5).map((r) => ({
+          '@type': 'Review',
+          reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5 },
+          author: { '@type': 'Person', name: r.author },
+          datePublished: r.createdAt.slice(0, 10),
+          name: r.title ?? undefined,
+          reviewBody: r.body ?? undefined,
+        })),
+      }),
     offers: product.variants.map((v) => ({
       '@type': 'Offer',
       name: v.label,
@@ -135,10 +160,23 @@ export default async function ProductPage({ params }: { params: Params }) {
           </div>
 
           <div>
-            <p className="eyebrow">{product.category?.name}</p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="eyebrow">{product.category?.name}</p>
+              <WishlistButton
+                productId={product.id}
+                name={product.name}
+                size={22}
+                className="-mt-2 h-11 w-11 bg-white ring-1 ring-brand-200"
+              />
+            </div>
             <h1 className="mt-3 text-[2.4rem] font-light leading-[1.02] tracking-[-0.01em] sm:text-6xl">
               {product.name}
             </h1>
+            {!!reviews?.total && reviews.average !== null && (
+              <a href="#reviews" className="mt-3 inline-flex text-sm hover:underline">
+                <RatingSummary average={reviews.average} count={reviews.total} />
+              </a>
+            )}
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-semibold">
               {product.isVeg && (
                 <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 ring-1 ring-brand-200">
@@ -196,12 +234,17 @@ export default async function ProductPage({ params }: { params: Params }) {
         </div>
       </div>
 
+      <BoughtTogether product={product} others={together} />
+
+      <Reviews productId={product.id} slug={product.slug} name={product.name} reviews={reviews} />
+
       <ProductCarousel
         eyebrow="Pairs well with"
         title="You may also like"
         products={related?.items ?? []}
         viewAllHref={product.category ? `/shop/${product.category.slug}` : undefined}
       />
+      <RecentlyViewed current={product.id} />
     </>
   );
 }

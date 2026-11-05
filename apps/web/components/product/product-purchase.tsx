@@ -11,6 +11,7 @@ import { site } from '@/lib/site';
 import { PincodeSheet } from '@/components/layout/pincode-picker';
 import { usePincode } from '@/lib/pincode';
 import { AddButton } from './add-button';
+import { NotifyMe } from './notify-me';
 
 export function ProductPurchase({ product }: { product: Product }) {
   const router = useRouter();
@@ -104,6 +105,10 @@ export function ProductPurchase({ product }: { product: Product }) {
             })}
           </div>
         </fieldset>
+      )}
+
+      {soldOut && variant && (
+        <NotifyMe key={variant.id} variantId={variant.id} label={variant.label} />
       )}
 
       {!soldOut && available <= 5 && (

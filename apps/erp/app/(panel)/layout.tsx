@@ -16,6 +16,8 @@ const NAV: { href: string; label: string; roles: Role[] }[] = [
   { href: '/inventory', label: 'Inventory', roles: ['ADMIN', 'STAFF'] },
   { href: '/purchase-orders', label: 'Purchase orders', roles: ['ADMIN', 'STAFF', 'VENDOR'] },
   { href: '/vendors', label: 'Vendors', roles: ['ADMIN', 'STAFF'] },
+  { href: '/coupons', label: 'Coupons', roles: ['ADMIN', 'STAFF'] },
+  { href: '/reviews', label: 'Reviews', roles: ['ADMIN', 'STAFF'] },
   { href: '/delivery', label: 'Delivery', roles: ['ADMIN', 'STAFF'] },
   { href: '/search-report', label: 'Customer searches', roles: ['ADMIN', 'STAFF'] },
   { href: '/users', label: 'Users', roles: ['ADMIN'] },
@@ -37,7 +39,14 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     enabled: canSeeStock,
     refetchInterval: 60_000,
   });
+  const pendingReviews = useQuery({
+    queryKey: ['reviews', 'pending-count'],
+    queryFn: () => api.reviews.list({ status: 'PENDING', pageSize: 1 }),
+    enabled: canSeeStock,
+    refetchInterval: 120_000,
+  });
   const badges: Record<string, number | undefined> = {
+    '/reviews': pendingReviews.data?.total,
     '/inventory': lowStock.data?.length,
     '/returns': openReturns.data?.total,
   };

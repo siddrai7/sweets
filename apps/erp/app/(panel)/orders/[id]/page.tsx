@@ -188,6 +188,22 @@ export default function OrderDetailPage() {
         </Card>
       </div>
 
+      {o.isGift && (
+        <Card className="mt-4 border-amber-200 bg-amber-50">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-800">
+            🎁 Gift order{o.giftWrap ? ' · gift wrap' : ''}
+          </h2>
+          {o.giftMessage ? (
+            <p className="mt-2 whitespace-pre-line font-serif text-lg italic">“{o.giftMessage}”</p>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">No card message.</p>
+          )}
+          <p className="no-print mt-2 text-xs text-amber-800">
+            Prices are left off the printed packing slip. Write the message on a card.
+          </p>
+        </Card>
+      )}
+
       <Card className="mt-4">
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase text-slate-500">
@@ -196,9 +212,15 @@ export default function OrderDetailPage() {
               <th className="pb-2 font-medium">SKU</th>
               <th className="pb-2 font-medium">HSN</th>
               <th className="pb-2 text-right font-medium">Qty</th>
-              <th className="pb-2 text-right font-medium">Price</th>
-              <th className="pb-2 text-right font-medium">GST</th>
-              <th className="pb-2 text-right font-medium">Total</th>
+              <th className={`pb-2 text-right font-medium${o.isGift ? ' print:hidden' : ''}`}>
+                Price
+              </th>
+              <th className={`pb-2 text-right font-medium${o.isGift ? ' print:hidden' : ''}`}>
+                GST
+              </th>
+              <th className={`pb-2 text-right font-medium${o.isGift ? ' print:hidden' : ''}`}>
+                Total
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -211,15 +233,29 @@ export default function OrderDetailPage() {
                 <td className="py-2 font-mono text-xs">{i.sku}</td>
                 <td className="py-2 text-xs">{i.hsnCode ?? '—'}</td>
                 <td className="py-2 text-right text-base font-semibold">{i.quantity}</td>
-                <td className="py-2 text-right">{formatMoney(i.unitPrice)}</td>
-                <td className="py-2 text-right text-xs">{Number(i.taxRatePercent)}%</td>
-                <td className="py-2 text-right">{formatMoney(i.lineTotal)}</td>
+                <td className={`py-2 text-right${o.isGift ? ' print:hidden' : ''}`}>
+                  {formatMoney(i.unitPrice)}
+                </td>
+                <td className={`py-2 text-right text-xs${o.isGift ? ' print:hidden' : ''}`}>
+                  {Number(i.taxRatePercent)}%
+                </td>
+                <td className={`py-2 text-right${o.isGift ? ' print:hidden' : ''}`}>
+                  {formatMoney(i.lineTotal)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <dl className="ml-auto mt-3 w-64 space-y-1 border-t border-slate-200 pt-3 text-sm">
+        <dl
+          className={`ml-auto mt-3 w-64 space-y-1 border-t border-slate-200 pt-3 text-sm${o.isGift ? ' print:hidden' : ''}`}
+        >
           <Row label="Subtotal" value={formatMoney(o.subtotal)} />
+          {Number(o.discountTotal) > 0 && (
+            <Row
+              label={o.couponCode ? `Coupon ${o.couponCode}` : 'Discount'}
+              value={`− ${formatMoney(o.discountTotal)}`}
+            />
+          )}
           <Row
             label="Delivery"
             value={Number(o.deliveryFee) ? formatMoney(o.deliveryFee) : 'Free'}

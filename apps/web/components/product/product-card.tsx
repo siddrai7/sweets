@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { formatMoney } from '@/lib/money';
 import type { Product } from '@sweets/types';
-import { ChevronDown, VegMark } from '@/components/ui/icons';
+import { ChevronDown, StarIcon, VegMark } from '@/components/ui/icons';
 import { isAvailable, percentOff } from '@/lib/pricing';
 import { AddButton } from './add-button';
 import { ProductImage } from './product-image';
+import { WishlistButton } from './wishlist-button';
 import { VariantSheet } from './variant-sheet';
 
 export function ProductCard({ product, priority }: { product: Product; priority?: boolean }) {
@@ -54,11 +55,25 @@ export function ProductCard({ product, priority }: { product: Product; priority?
           </span>
         )}
       </Link>
+      <WishlistButton
+        productId={product.id}
+        name={product.name}
+        size={18}
+        className="absolute right-3.5 top-3.5 z-20 h-9 w-9 bg-white/90 shadow-sm backdrop-blur sm:right-4 sm:top-4"
+      />
 
       <div className="flex flex-1 flex-col px-1 pb-0.5 pt-2.5 sm:px-1.5">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-cocoa-soft">
           {product.isVeg && <VegMark size={11} />}
           <span className="truncate">{product.category?.name ?? 'Fresh today'}</span>
+          {product.ratingCount > 0 && product.ratingAvg && (
+            <span className="ml-auto flex shrink-0 items-center gap-1 text-cocoa">
+              <StarIcon size={11} className="text-saffron-500" />
+              <span className="sr-only">Rated</span>
+              {Number(product.ratingAvg).toFixed(1)}
+              <span className="text-cocoa-soft">({product.ratingCount})</span>
+            </span>
+          )}
         </div>
         <h3 className="mt-1 line-clamp-2 min-h-[2.5em] text-[0.92rem] font-semibold leading-tight sm:text-[0.98rem]">
           <Link href={href} className="after:absolute after:inset-0 after:rounded-[1.25rem]">

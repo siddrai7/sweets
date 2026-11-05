@@ -1,11 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import type { CouponPreview, Product } from '@sweets/types';
+import { browserApi } from '@/lib/browser-api';
 import { formatMoney } from '@/lib/money';
 import { ProductImage } from '@/components/product/product-image';
 import { MinusIcon, PlusIcon, TrashIcon, TruckIcon } from '@/components/ui/icons';
 import { useCart, type CartLine } from '@/lib/cart';
-import { deliveryFeeFor } from '@/lib/pricing';
+import { deliveryFeeFor, isAvailable, toCartLine } from '@/lib/pricing';
 import { site } from '@/lib/site';
 
 export function CartLineItem({ line, size = 'md' }: { line: CartLine; size?: 'md' | 'lg' }) {
@@ -98,6 +101,64 @@ export function FreeDeliveryMeter({ subtotal }: { subtotal: number }) {
           style={{ width: `${progress}%` }}
         />
       </div>
+      {remaining > 0 && remaining <= site.freeDeliveryAbove * 0.6 && (
+        <GapFillers remaining={remaining} />
+      )}
+    </div>
+  );
+}
+
+/** Small add-ons priced around what's missing for free delivery. */
+function GapFillers({ remaining }: { remaining: number }) {
+  const { lines, add } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const band = Math.ceil(remaining / 100);
+  useEffect(() => {
+    browserApi.catalog
+      .products({ inStock: true, maxPrice: band * 100 + 150, sort: 'featured', pageSize: 12 })
+      .then((r) => setProducts(r.items))
+      .catch(() => {});
+  }, [band]);
+  const inCart = new Set(lines.map((l) => l.variantId));
+  const picks = products
+    .map((p) => ({ p, v: p.variants.find((v) => isAvailable(v) && !inCart.has(v.id)) }))
+    .filter((x): x is { p: Product; v: NonNullable<typeof x.v> } => !!x.v)
+    .sort(
+      (a, b) => Math.abs(Number(a.v.price) - remaining) - Math.abs(Number(b.v.price) - remaining),
+    )
+    .slice(0, 6);
+  if (!picks.length) return null;
+  return (
+    <div className="mt-3 border-t border-brand-100 pt-3">
+      <p className="text-xs font-bold text-cocoa-soft">Top it up with</p>
+      <ul className="no-scrollbar -mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1">
+        {picks.map(({ p, v }) => (
+          <li
+            key={v.id}
+            className="flex w-32 shrink-0 flex-col rounded-xl bg-brand-50 p-2 ring-1 ring-brand-100"
+          >
+            <ProductImage
+              name={p.name}
+              slug={p.slug}
+              src={p.images[0]}
+              sizes="112px"
+              className="aspect-square w-full rounded-lg"
+            />
+            <span className="mt-1.5 line-clamp-1 text-xs font-semibold">{p.name}</span>
+            <span className="text-xs text-cocoa-soft">{v.label}</span>
+            <span className="mt-1 flex items-center justify-between">
+              <span className="text-xs font-extrabold tabular-nums">{formatMoney(v.price)}</span>
+              <button
+                onClick={() => add(toCartLine(p, v), 1, { open: false })}
+                aria-label={`Add ${p.name} ${v.label}`}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-white"
+              >
+                <PlusIcon size={14} />
+              </button>
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -107,13 +168,16 @@ export function BillDetails({
   subtotal,
   savings,
   fulfillment = 'DELIVERY',
+  coupon,
 }: {
   subtotal: number;
   savings: number;
   fulfillment?: 'DELIVERY' | 'PICKUP';
+  coupon?: CouponPreview | null;
 }) {
-  const fee = deliveryFeeFor(subtotal, fulfillment);
-  const total = subtotal + fee;
+  const couponOff = Number(coupon?.discount ?? 0);
+  const fee = coupon?.freeDelivery ? 0 : deliveryFeeFor(subtotal, fulfillment);
+  const total = subtotal - couponOff + fee;
   const freeDeliveryApplied = fulfillment === 'DELIVERY' && fee === 0;
 
   return (
@@ -122,6 +186,13 @@ export function BillDetails({
       <Row label="Item total" value={formatMoney(subtotal + savings)} />
       {savings > 0 && (
         <Row label="Discount" value={`− ${formatMoney(savings)}`} className="text-pista-600" />
+      )}
+      {coupon && couponOff > 0 && (
+        <Row
+          label={`Coupon ${coupon.code}`}
+          value={`− ${formatMoney(couponOff)}`}
+          className="text-pista-600"
+        />
       )}
       <Row
         label={fulfillment === 'PICKUP' ? 'Store pickup' : 'Delivery fee'}
@@ -144,10 +215,11 @@ export function BillDetails({
         <span>To pay</span>
         <span className="tabular-nums">{formatMoney(total)}</span>
       </div>
-      {savings + (freeDeliveryApplied ? site.deliveryFee : 0) > 0 && (
+      {savings + couponOff + (freeDeliveryApplied ? site.deliveryFee : 0) > 0 && (
         <p className="rounded-xl bg-pista-50 px-3 py-2 text-center text-xs font-bold text-pista-600">
-          You&apos;re saving {formatMoney(savings + (freeDeliveryApplied ? site.deliveryFee : 0))}{' '}
-          on this order
+          You&apos;re saving{' '}
+          {formatMoney(savings + couponOff + (freeDeliveryApplied ? site.deliveryFee : 0))} on this
+          order
         </p>
       )}
       <p className="text-xs text-cocoa-soft">Prices are inclusive of all taxes (GST).</p>

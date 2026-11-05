@@ -46,6 +46,8 @@ model User {
   cartItems       CartItem[]
   returnsCreated  ReturnRequest[]    @relation("ReturnCreatedBy")
   returnsResolved ReturnRequest[]    @relation("ReturnResolvedBy")
+  reviews         Review[]
+  wishlist        WishlistItem[]
 
   @@index([role])
 }
@@ -142,10 +144,15 @@ model Product {
   storageInstructions String?
   /// Lowest active variant price, kept in sync by CatalogService so lists can sort/filter by price.
   basePrice           Decimal? @db.Decimal(10, 2)
+  /// Average of approved reviews, kept in sync by ReviewsService.
+  ratingAvg           Decimal? @db.Decimal(3, 2)
+  ratingCount         Int      @default(0)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   variants ProductVariant[]
+  reviews  Review[]
+  wishedBy WishlistItem[]
 
   @@index([categoryId])
   @@index([isActive, isFeatured])
@@ -174,6 +181,7 @@ model ProductVariant {
   orderItems     OrderItem[]
   recipe         RecipeItem[]
   cartItems      CartItem[]
+  stockAlerts    StockAlert[]
 
   @@index([productId])
 }
@@ -388,10 +396,18 @@ model Order {
   discountTotal     Decimal         @default(0) @db.Decimal(10, 2)
   total             Decimal         @db.Decimal(12, 2)
   notes             String?
-  /// GST tax invoice, issued when the order is delivered (or collected). Sequential per
-  /// financial year, e.g. "MH/26-27/00042".
   /// SHA-256 of the private link token for guest orders (raw token is never stored).
   guestTokenHash    String?         @unique
+  /// Coupon applied at checkout (code copied so the order reads right if the coupon changes).
+  couponId          String?
+  coupon            Coupon?         @relation(fields: [couponId], references: [id])
+  couponCode        String?
+  /// Gift orders: a card message, gift wrap, and an invoice-free packing slip.
+  isGift            Boolean         @default(false)
+  giftMessage       String?
+  giftWrap          Boolean         @default(false)
+  /// GST tax invoice, issued when the order is delivered (or collected). Sequential per
+  /// financial year, e.g. "MH/26-27/00042".
   invoiceNumber     String?         @unique
   invoicedAt        DateTime?
   createdAt         DateTime        @default(now())
@@ -404,6 +420,7 @@ model Order {
 
   @@index([customerId, createdAt])
   @@index([status, createdAt])
+  @@index([couponId])
 }
 
 /// Product name, label and price are copied at order time so later catalog
@@ -419,6 +436,8 @@ model OrderItem {
   sku            String
   unitPrice      Decimal        @db.Decimal(10, 2)
   quantity       Int
+  /// This line's share of the order's coupon discount (tax-inclusive), for the GST invoice.
+  discount       Decimal        @default(0) @db.Decimal(10, 2)
   taxRatePercent Decimal        @db.Decimal(5, 2)
   /// HSN code at the time of ordering, for the GST invoice.
   hsnCode        String?
@@ -581,4 +600,89 @@ model ContactMessage {
   createdAt DateTime  @default(now())
 
   @@index([handledAt, createdAt])
+}
+
+enum CouponType {
+  PERCENT
+  FLAT
+  FREE_DELIVERY
+}
+
+/// Discount codes, managed in the ERP. Discounts come off tax-inclusive prices, so each order
+/// line's taxable value shrinks in proportion (see OrderItem.discount).
+model Coupon {
+  id               String     @id @default(cuid())
+  /// Upper-case, e.g. "DIWALI10".
+  code             String     @unique
+  description      String?
+  type             CouponType
+  /// Percent (1-100) or rupees off; ignored for FREE_DELIVERY.
+  value            Decimal    @default(0) @db.Decimal(10, 2)
+  /// Cap on a percentage discount, in rupees.
+  maxDiscount      Decimal?   @db.Decimal(10, 2)
+  minSubtotal      Decimal    @default(0) @db.Decimal(10, 2)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  /// Total redemptions allowed; null = unlimited.
+  usageLimit       Int?
+  perCustomerLimit Int?       @default(1)
+  firstOrderOnly   Boolean    @default(false)
+  isActive         Boolean    @default(true)
+  /// Redemptions on orders that weren't cancelled.
+  usedCount        Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  orders Order[]
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Product reviews from customers who received the product. Shown once approved in the ERP.
+model Review {
+  id             String       @id @default(cuid())
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId        String?
+  rating         Int
+  title          String?
+  body           String?
+  status         ReviewStatus @default(PENDING)
+  /// Staff note shown to nobody but staff, e.g. why it was rejected.
+  moderationNote String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([productId, userId])
+  @@index([status, createdAt])
+  @@index([productId, status])
+}
+
+model WishlistItem {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, productId])
+}
+
+/// "Notify me when back in stock" requests. Emailed (and cleared) when the size is restocked.
+model StockAlert {
+  id         String         @id @default(cuid())
+  variantId  String
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  email      String
+  createdAt  DateTime       @default(now())
+  notifiedAt DateTime?
+
+  @@unique([variantId, email])
+  @@index([notifiedAt])
 }

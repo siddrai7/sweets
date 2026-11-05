@@ -149,8 +149,10 @@ export class InvoicesService {
     let cgstTotal = new Decimal(0);
     const rows = order.items.map((item, i) => {
       const rate = new Decimal(item.taxRatePercent);
-      const lineTaxable = item.lineTotal.mul(100).div(rate.add(100)).toDecimalPlaces(2);
-      const lineTax = item.lineTotal.sub(lineTaxable);
+      // A coupon lowers what the customer pays for the line, and so its taxable value.
+      const net = item.lineTotal.sub(item.discount);
+      const lineTaxable = net.mul(100).div(rate.add(100)).toDecimalPlaces(2);
+      const lineTax = net.sub(lineTaxable);
       const half = lineTax.div(2).toDecimalPlaces(2);
       cgstTotal = cgstTotal.add(half);
       taxable = taxable.add(lineTaxable);
@@ -159,7 +161,7 @@ export class InvoicesService {
       const taxCells = intraState
         ? `<td class="r">${rate.div(2).toString()}%<br>${money(half)}</td><td class="r">${rate.div(2).toString()}%<br>${money(lineTax.sub(half))}</td>`
         : `<td class="r">${rate.toString()}%<br>${money(lineTax)}</td>`;
-      return `<tr><td>${i + 1}</td><td>${esc(item.productName)}<div class="muted">${esc(item.variantLabel)} · ${esc(item.sku)}</div></td><td>${esc(hsn)}</td><td class="r">${item.quantity}</td><td class="r">${money(item.unitPrice)}</td><td class="r">${money(lineTaxable)}</td>${taxCells}<td class="r">${money(item.lineTotal)}</td></tr>`;
+      return `<tr><td>${i + 1}</td><td>${esc(item.productName)}<div class="muted">${esc(item.variantLabel)} · ${esc(item.sku)}${item.discount.isZero() ? '' : ` · discount ${money(item.discount)}`}</div></td><td>${esc(hsn)}</td><td class="r">${item.quantity}</td><td class="r">${money(item.unitPrice)}</td><td class="r">${money(lineTaxable)}</td>${taxCells}<td class="r">${money(net)}</td></tr>`;
     });
     // Totals are the sum of the per-line amounts, so the invoice adds up to the paisa.
     const cgst = cgstTotal;
@@ -244,9 +246,9 @@ export class InvoicesService {
     <tr><td class="muted">Taxable value</td><td class="r">${money(taxable)}</td></tr>
     ${intraState ? `<tr><td class="muted">CGST</td><td class="r">${money(cgst)}</td></tr><tr><td class="muted">SGST</td><td class="r">${money(tax.sub(cgst))}</td></tr>` : `<tr><td class="muted">IGST</td><td class="r">${money(tax)}</td></tr>`}
     ${Number(order.deliveryFee) > 0 ? `<tr><td class="muted">Delivery charges</td><td class="r">${money(order.deliveryFee)}</td></tr>` : ''}
-    ${Number(order.discountTotal) > 0 ? `<tr><td class="muted">Discount</td><td class="r">− ${money(order.discountTotal)}</td></tr>` : ''}
     <tr class="grand"><td>Total</td><td class="r">${money(order.total)}</td></tr>
   </table>
+  ${Number(order.discountTotal) > 0 ? `<p class="muted">Item amounts are after a discount of ${money(order.discountTotal)}${order.couponCode ? ` (coupon ${esc(order.couponCode)})` : ''}.</p>` : ''}
   <div class="words"><span class="label">Amount in words</span><br>${amountInWords(Number(order.total))}</div>
   <div class="foot">
     <div class="muted">Prices are inclusive of GST. Tax is not payable on reverse charge.<br>This is a computer-generated invoice.</div>

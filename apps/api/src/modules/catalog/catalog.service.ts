@@ -322,6 +322,68 @@ export class CatalogService {
     if (!exists) throw new BadRequestException('That category does not exist');
   }
 
+  /** Active products by id, in the order given (wishlist, recently viewed). */
+  async productsByIds(ids: string[]) {
+    if (!ids.length) return [];
+    const items = await this.prisma.product.findMany({
+      where: { id: { in: ids }, isActive: true },
+      include: productInclude,
+    });
+    const order = new Map(ids.map((id, i) => [id, i]));
+    items.sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+    return this.withAvailability(items, true);
+  }
+
+  /** Active products that sell any of these sizes ("Order again"). */
+  async productsForVariants(variantIds: string[]) {
+    const rows = await this.prisma.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      select: { productId: true },
+    });
+    return this.productsByIds([...new Set(rows.map((r) => r.productId))]);
+  }
+
+  /**
+   * "Frequently bought together": products that most often share an order with this one,
+   * topped up with bestsellers from the same category while there's little order history.
+   */
+  async boughtTogether(idOrSlug: string, limit = 4) {
+    const product = await this.prisma.product.findFirst({
+      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
+      select: { id: true, categoryId: true },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+    const rows = await this.prisma.$queryRaw<{ productId: string }[]>`
+      SELECT v2."productId", COUNT(DISTINCT oi2."orderId") AS n
+      FROM "OrderItem" oi1
+      JOIN "ProductVariant" v1 ON v1.id = oi1."variantId"
+      JOIN "OrderItem" oi2 ON oi2."orderId" = oi1."orderId"
+      JOIN "ProductVariant" v2 ON v2.id = oi2."variantId"
+      JOIN "Order" o ON o.id = oi1."orderId"
+      WHERE v1."productId" = ${product.id} AND v2."productId" <> ${product.id}
+        AND o.status <> 'CANCELLED'
+      GROUP BY v2."productId"
+      ORDER BY n DESC
+      LIMIT ${limit * 2}`;
+    let ids = rows.map((r) => r.productId);
+    if (ids.length < limit) {
+      const fill = await this.prisma.product.findMany({
+        where: { isActive: true, id: { notIn: [product.id, ...ids] } },
+        orderBy: [{ isFeatured: 'desc' }, { ratingCount: 'desc' }, { name: 'asc' }],
+        select: { id: true, categoryId: true },
+        take: 40,
+      });
+      // Other categories first: a box of ladoos pairs better with namkeen than more ladoos.
+      fill.sort(
+        (a, b) =>
+          Number(a.categoryId === product.categoryId) - Number(b.categoryId === product.categoryId),
+      );
+      ids = [...ids, ...fill.map((p) => p.id)];
+    }
+    const products = await this.productsByIds(ids);
+    return products.filter((p) => p.variants.some((v) => v.available > 0)).slice(0, limit);
+  }
+
   private async withAvailability(products: ProductWithVariants[], activeVariantsOnly: boolean) {
     const variantIds = products.flatMap((p) => p.variants.map((v) => v.id));
     const available = await this.inventory.availableByVariant(variantIds);

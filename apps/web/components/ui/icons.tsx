@@ -284,3 +284,18 @@ export function VegMark({ size = 14 }: { size?: number }) {
     </svg>
   );
 }
+export const HeartIcon = ({ filled, ...p }: IconProps & { filled?: boolean }) => (
+  <svg {...base(p)} fill={filled ? 'currentColor' : 'none'}>
+    <path d="M12 20s-7-4.4-9.2-8.7C1.3 8.2 3 4.5 6.6 4.5c2.1 0 3.6 1.2 5.4 3.2 1.8-2 3.3-3.2 5.4-3.2 3.6 0 5.3 3.7 3.8 6.8C19 15.6 12 20 12 20Z" />
+  </svg>
+);
+export const BellIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9ZM10 20a2.2 2.2 0 0 0 4 0" />
+  </svg>
+);
+export const RepeatIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 12a8 8 0 0 1 13.7-5.7L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.7L4 15.5M4 20v-4.5h4.5" />
+  </svg>
+);

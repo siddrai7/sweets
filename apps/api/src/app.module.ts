@@ -19,6 +19,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { EngagementModule } from './modules/engagement/engagement.module';
 import { AccountModule } from './modules/account/account.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
+import { MarketingModule } from './modules/marketing/marketing.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DeliveryModule } from './modules/delivery/delivery.module';
     EngagementModule,
     AccountModule,
     DeliveryModule,
+    MarketingModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
