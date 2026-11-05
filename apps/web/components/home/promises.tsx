@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { SweetArt } from '@/components/art/sweet-art';
+import { ArtImage } from '@/components/art/art-image';
 import { promises } from '@/content/home';
 import { ArrowRight, DropIcon, HandIcon, LeafIcon, SunIcon } from '@/components/ui/icons';
-import { artFor } from '@/lib/art';
 import { site } from '@/lib/site';
 
 const ICONS = { sun: SunIcon, drop: DropIcon, leaf: LeafIcon, hand: HandIcon };
@@ -14,14 +13,14 @@ export function Promises({ showLink = true }: { showLink?: boolean }) {
       <div className="container-page">
         <div className="relative overflow-hidden rounded-[2rem] bg-brand-900 px-6 py-12 text-brand-100 sm:px-12 sm:py-16 lg:px-16">
           <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-600/40 blur-3xl" />
-          <SweetArt
-            spec={artFor('besan-ladoo')}
+          <ArtImage
+            hints={['besan-ladoo']}
             background={false}
             className="pointer-events-none absolute -bottom-16 -right-16 hidden h-80 w-80 opacity-90 lg:block"
           />
           <div className="relative grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:gap-16">
             <div>
-              <p className="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-saffron-400">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-saffron-400">
                 Since {site.established}
               </p>
               <h2 className="mt-4 text-[2.1rem] font-light leading-[1.05] text-white sm:text-5xl">

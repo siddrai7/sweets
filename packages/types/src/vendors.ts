@@ -1,9 +1,7 @@
 import { z } from 'zod';
+import { GSTIN_PATTERN } from './constants.js';
 import { dateTimeSchema, moneySchema } from './common.js';
 import { MEASUREMENT_UNITS } from './enums.js';
-
-/** Indian GSTIN: 2-digit state code, PAN, entity number, "Z", checksum. */
-export const GSTIN_PATTERN = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
 // Base shape carries no defaults so the `.partial()` update schema never resets omitted fields.
 // Optional fields are `.nullable()` so an edit can clear them.

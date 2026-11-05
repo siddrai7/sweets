@@ -5,10 +5,13 @@ import { PromoBanners } from '@/components/home/promo-banners';
 import { Promises } from '@/components/home/promises';
 import { Testimonials } from '@/components/home/testimonials';
 import { ProductCarousel } from '@/components/product/product-carousel';
+import { RecentlyViewed } from '@/components/product/recently-viewed';
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
 import { buildCategoryTree } from '@/lib/categories';
 
 export const revalidate = 60;
+
+export const metadata = { alternates: { canonical: '/' } };
 
 const collection = (tag: string) =>
   safe(serverApi.catalog.products({ tag, pageSize: 12 }, CATALOG_REVALIDATE), null).then(
@@ -28,6 +31,7 @@ export default async function HomePage() {
       <Hero />
       <CategoryTiles categories={buildCategoryTree(categories)} />
       <PromoBanners />
+      <RecentlyViewed />
       <ProductCarousel
         eyebrow="Most loved"
         title="Bestsellers"

@@ -1,10 +1,6 @@
 import { z } from 'zod';
+import { MAX_CART_LINES } from './constants.js';
 import { addressSchema } from './orders.js';
-
-/** Most items a cart may hold; protects the API from oversized payloads. */
-export const MAX_CART_LINES = 100;
-/** Saved addresses per customer. */
-export const MAX_SAVED_ADDRESSES = 10;
 
 export const cartItemsSchema = z.object({
   items: z

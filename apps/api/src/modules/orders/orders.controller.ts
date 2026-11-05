@@ -1,4 +1,9 @@
 import { Body, Controller, Get, Header, Param, Patch, Post, Query } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+import { guestOrderSchema } from '@sweets/types';
+import { Public } from '../../common/decorators/public.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type RequestUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -16,6 +21,9 @@ import { InvoicesService } from './invoices.service';
 import { ReturnsService } from './returns.service';
 import { OrdersService } from './orders.service';
 
+class GuestOrderDto extends createZodDto(guestOrderSchema) {}
+class GuestTokenDto extends createZodDto(z.object({ token: z.string().min(20).max(100) })) {}
+
 @ApiTags('orders')
 @ApiBearerAuth()
 @Controller('orders')
@@ -30,6 +38,33 @@ export class OrdersController {
   @Post()
   place(@Body() dto: PlaceOrderDto, @CurrentUser() user: RequestUser) {
     return this.orders.place(user.id, dto);
+  }
+
+  /** Checkout without an account. Returns the order and its private link token. */
+  @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Post('guest')
+  placeGuest(@Body() dto: GuestOrderDto) {
+    return this.orders.placeGuest(dto);
+  }
+
+  /** A guest order, opened with its private link token. */
+  @Public()
+  @Get('guest/:number')
+  getGuest(@Param('number') number: string, @Query() q: GuestTokenDto) {
+    return this.orders.getGuest(number, q.token);
+  }
+
+  @Public()
+  @Get('guest/:number/invoice')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @Header(
+    'Content-Security-Policy',
+    "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'",
+  )
+  async guestInvoice(@Param('number') number: string, @Query() q: GuestTokenDto) {
+    const order = await this.orders.getGuest(number, q.token);
+    return this.invoices.html(order.id);
   }
 
   /** Customers see their own orders; staff see everything. */

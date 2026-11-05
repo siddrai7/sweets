@@ -60,7 +60,7 @@ export function AccountLink({ variant = 'full' }: { variant?: 'full' | 'icon' })
     >
       <UserIcon size={22} />
       <span className="flex flex-col text-left leading-tight">
-        <span className="text-[0.7rem] text-cocoa-soft">
+        <span className="text-xs text-cocoa-soft">
           {user ? `Hello, ${user.name.split(' ')[0]}` : 'Hello, sign in'}
         </span>
         <span className="text-sm font-bold">{user ? 'Orders & account' : 'Account'}</span>
@@ -95,7 +95,7 @@ export function CartButton() {
       <BagIcon size={20} />
       {filled ? (
         <span className="flex flex-col items-start leading-tight">
-          <span className="text-[0.7rem] font-semibold opacity-80">
+          <span className="text-xs font-semibold opacity-80">
             {count} item{count > 1 ? 's' : ''}
           </span>
           <span className="tabular-nums">{formatMoney(subtotal)}</span>
@@ -118,7 +118,7 @@ export function CartIconButton() {
     >
       <BagIcon size={22} />
       {loaded && count > 0 && (
-        <span className="absolute right-0.5 top-0.5 flex h-[1.1rem] min-w-[1.1rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[0.6rem] font-bold text-white">
+        <span className="absolute right-0.5 top-0.5 flex h-[1.1rem] min-w-[1.1rem] items-center justify-center rounded-full bg-brand-600 px-1 text-xs font-bold text-white">
           {count}
         </span>
       )}

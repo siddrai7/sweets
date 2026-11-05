@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { nextActions } from '@/lib/orders';
 import { formatMoney } from '@sweets/api-client';
-import { ORDER_STATUSES, type OrderStatus } from '@sweets/types';
+import { ORDER_STATUSES } from '@sweets/types/constants';
+import type { OrderStatus } from '@sweets/types';
 import { Badge, Button, Empty, PageHeader, Table, Td, fmtDate } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 

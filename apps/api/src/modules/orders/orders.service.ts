@@ -1,25 +1,29 @@
+import { createHash, randomBytes } from 'node:crypto';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   ORDER_STATUS_TRANSITIONS,
+  type GuestOrderInput,
   type OrderQuery,
   type OrderStatus,
   type PlaceOrderInput,
   type UpdateOrderStatusInput,
 } from '@sweets/types';
 import { Prisma } from '../../generated/prisma/client';
-import type { Env } from '../../config/env';
 import { pageArgs, paginated } from '../../common/utils/pagination';
 import { referenceNumber } from '../../common/utils/reference-number';
 import { PrismaService, type Tx } from '../../prisma/prisma.service';
 import { AccountService } from '../account/account.service';
 import { InvoicesService } from './invoices.service';
+import { DeliveryService } from '../delivery/delivery.service';
+import { allocateDiscount } from '../marketing/coupon-math';
+import { CouponsService } from '../marketing/coupons.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PaymentsService } from '../payments/payments.service';
 
@@ -44,15 +48,18 @@ const orderInclude = {
   },
 } satisfies Prisma.OrderInclude;
 
+const hashToken = (t: string) => createHash('sha256').update(t).digest('hex');
+
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly inventory: InventoryService,
     private readonly payments: PaymentsService,
-    private readonly config: ConfigService<Env, true>,
     private readonly account: AccountService,
     private readonly invoices: InvoicesService,
+    private readonly delivery: DeliveryService,
+    private readonly coupons: CouponsService,
   ) {}
 
   private readonly logger = new Logger(OrdersService.name);
@@ -62,6 +69,7 @@ export class OrdersService {
    * can never buy the same last box; cancelling releases it.
    */
   async place(customerId: string, input: PlaceOrderInput) {
+    await this.delivery.assertDeliverable(input);
     const quantities = new Map<string, number>();
     for (const item of input.items) {
       quantities.set(item.variantId, (quantities.get(item.variantId) ?? 0) + item.quantity);
@@ -75,9 +83,18 @@ export class OrdersService {
       throw new BadRequestException('One or more items are no longer available');
     }
 
-    const lines = variants.map((v) => {
+    const lineTotals = variants.map((v) => v.price.mul(quantities.get(v.id)!));
+    const subtotal = lineTotals.reduce((sum, l) => sum.add(l), new Decimal(0));
+    const applied = input.couponCode
+      ? await this.coupons.evaluate(this.prisma, input.couponCode, subtotal, customerId)
+      : null;
+    const discount = applied?.discount ?? new Decimal(0);
+    const shares = allocateDiscount(discount, lineTotals);
+
+    const lines = variants.map((v, i) => {
       const quantity = quantities.get(v.id)!;
-      const lineTotal = v.price.mul(quantity);
+      const lineTotal = lineTotals[i]!;
+      const lineDiscount = shares[i]!;
       const rate = v.product.taxRatePercent;
       return {
         variantId: v.id,
@@ -89,18 +106,19 @@ export class OrdersService {
         taxRatePercent: rate,
         hsnCode: v.product.hsnCode,
         lineTotal,
-        tax: lineTotal.mul(rate).div(rate.add(100)),
+        discount: lineDiscount,
+        // GST is on what the customer actually pays for the line, after the discount.
+        tax: lineTotal.sub(lineDiscount).mul(rate).div(rate.add(100)),
       };
     });
 
-    const subtotal = lines.reduce((sum, l) => sum.add(l.lineTotal), new Decimal(0));
     const taxTotal = lines.reduce((sum, l) => sum.add(l.tax), new Decimal(0)).toDecimalPlaces(2);
-    const deliveryFee =
-      input.fulfillment === 'DELIVERY' &&
-      subtotal.lessThan(this.config.get('FREE_DELIVERY_ABOVE', { infer: true }))
-        ? new Decimal(this.config.get('DELIVERY_FEE', { infer: true }))
-        : new Decimal(0);
-    const total = subtotal.add(deliveryFee);
+    const deliveryFee = this.coupons.deliveryFee(
+      subtotal,
+      input.fulfillment,
+      !!applied?.freeDelivery,
+    );
+    const total = subtotal.sub(discount).add(deliveryFee);
 
     const { orderId, clientPayload } = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
@@ -117,11 +135,19 @@ export class OrdersService {
           subtotal,
           taxTotal,
           deliveryFee,
+          discountTotal: discount,
           total,
+          couponId: applied?.coupon.id,
+          couponCode: applied?.coupon.code,
+          isGift: !!input.isGift,
+          giftMessage: input.isGift ? input.giftMessage || null : null,
+          giftWrap: !!input.isGift && !!input.giftWrap,
           items: { create: lines.map(({ tax: _tax, ...line }) => line) },
           statusHistory: { create: { status: 'PENDING_PAYMENT', changedById: customerId } },
         },
       });
+
+      if (applied) await this.coupons.redeem(tx, applied.coupon.id);
 
       for (const line of lines) {
         await this.inventory.allocateFifo(tx, {
@@ -153,6 +179,60 @@ export class OrdersService {
     }
 
     return { order: await this.get(orderId), payment: clientPayload };
+  }
+
+  /**
+   * Guest checkout: no account, just contact details. One guest record per email is reused;
+   * the customer gets a private link (token shown once, only its hash is stored).
+   */
+  async placeGuest(input: GuestOrderInput) {
+    const email = input.contact.email.toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing && !existing.isGuest) {
+      throw new ConflictException(
+        'You already have an account with this email. Please sign in to place your order.',
+      );
+    }
+    const guest =
+      existing ??
+      (await this.prisma.user.create({
+        data: {
+          email,
+          name: input.contact.name,
+          role: 'CUSTOMER',
+          isGuest: true,
+          // Unusable until they set one via "Forgot password".
+          passwordHash: `!guest:${randomBytes(16).toString('hex')}`,
+        },
+      }));
+    if (existing && existing.name !== input.contact.name) {
+      await this.prisma.user.update({
+        where: { id: guest.id },
+        data: { name: input.contact.name },
+      });
+    }
+
+    const address =
+      input.order.fulfillment === 'DELIVERY' && input.order.address
+        ? { ...input.order.address, name: input.order.address.name || input.contact.name }
+        : input.order.address;
+    const placed = await this.place(guest.id, { ...input.order, address, saveAddress: false });
+    const token = randomBytes(24).toString('base64url');
+    await this.prisma.order.update({
+      where: { id: placed.order.id },
+      data: { guestTokenHash: hashToken(token) },
+    });
+    return { order: placed.order, token };
+  }
+
+  /** A guest's order, opened with the private link. */
+  async getGuest(orderNumber: string, token: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { orderNumber, guestTokenHash: hashToken(token) },
+      include: orderInclude,
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    return order;
   }
 
   async list(q: OrderQuery, customerId?: string) {
@@ -224,7 +304,10 @@ export class OrdersService {
     userId: string,
     note?: string,
   ) {
-    const order = await tx.order.findUnique({ where: { id: orderId }, select: { status: true } });
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      select: { status: true, couponId: true },
+    });
     if (!order) throw new NotFoundException('Order not found');
     if (!ORDER_STATUS_TRANSITIONS[order.status].includes(to)) {
       throw new BadRequestException(`Cannot move an order from ${order.status} to ${to}`);
@@ -247,6 +330,7 @@ export class OrdersService {
         userId,
       });
       await this.payments.failPending(tx, orderId);
+      if (order.couponId) await this.coupons.release(tx, order.couponId);
     }
     if (to === 'DELIVERED') {
       await this.payments.markCodCollected(tx, orderId);

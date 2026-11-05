@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import type { Category, ProductQuery } from '@sweets/types';
-import { SweetArt } from '@/components/art/sweet-art';
+import { ArtImage } from '@/components/art/art-image';
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
 import { artFor } from '@/lib/art';
 import { buildCategoryTree, categoryTrail } from '@/lib/categories';
 import { PRICE_BANDS } from '@/lib/price-bands';
 import { Breadcrumbs, type Crumb } from './breadcrumbs';
 import { ProductGrid } from './product-grid';
+import { SearchLogger } from './search-logger';
 import { ActiveFilters, Filters, MobileControls, SortSelect } from './shop-controls';
 
 export type ShopSearchParams = {
@@ -97,12 +98,26 @@ export async function ShopView({
             {description && (
               <p className="mt-3 text-sm text-cocoa-soft sm:text-lg">{description}</p>
             )}
-            <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-cocoa-soft">
-              {initial.total} {initial.total === 1 ? 'product' : 'products'}
-            </p>
+            {searchParams.q && initial.suggestion ? (
+              <p className="mt-3 text-sm text-cocoa-soft">
+                No exact match for “{searchParams.q}”. Showing close matches. Did you mean{' '}
+                <Link
+                  href={`/search?q=${encodeURIComponent(initial.suggestion)}`}
+                  className="font-bold text-brand-600 underline underline-offset-2"
+                >
+                  {initial.suggestion}
+                </Link>
+                ?
+              </p>
+            ) : (
+              <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-cocoa-soft">
+                {initial.total} {initial.total === 1 ? 'product' : 'products'}
+              </p>
+            )}
+            {searchParams.q && <SearchLogger q={searchParams.q} />}
           </div>
-          <SweetArt
-            spec={art}
+          <ArtImage
+            hints={[category?.slug ?? searchParams.tag ?? 'assorted', heading]}
             background={false}
             className="pointer-events-none absolute -bottom-6 right-0 h-36 w-36 sm:right-10 sm:h-60 sm:w-60"
           />
@@ -137,7 +152,7 @@ export async function ShopView({
         <aside className="hidden lg:block">
           <div className="sticky top-[calc(var(--header-h)+5rem)] space-y-8">
             <nav aria-label="All categories">
-              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-cocoa-soft">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-cocoa-soft">
                 Categories
               </p>
               <ul className="space-y-0.5 text-sm">

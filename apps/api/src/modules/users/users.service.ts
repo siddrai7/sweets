@@ -27,6 +27,7 @@ const select = {
   vendorId: true,
   vendor: { select: { id: true, name: true } },
   isActive: true,
+  isGuest: true,
   lastLoginAt: true,
   createdAt: true,
 } satisfies Prisma.UserSelect;
@@ -150,7 +151,8 @@ export class UsersService {
     await this.find(id);
     await this.prisma.user.update({
       where: { id },
-      data: { passwordHash: await this.auth.hashPassword(password) },
+      // A password makes a guest checkout account a normal account.
+      data: { passwordHash: await this.auth.hashPassword(password), isGuest: false },
     });
     await this.auth.revokeAll(id);
   }

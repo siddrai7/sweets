@@ -48,6 +48,11 @@ export const placeOrderSchema = z
     notes: z.string().max(500).optional(),
     /** Also add the delivery address to the customer's saved addresses. */
     saveAddress: z.boolean().optional(),
+    couponCode: z.string().trim().toUpperCase().max(20).optional(),
+    /** Gift orders get a card with the message, and prices are left off the packing slip. */
+    isGift: z.boolean().optional(),
+    giftMessage: z.string().trim().max(300).optional(),
+    giftWrap: z.boolean().optional(),
   })
   .refine((o) => o.fulfillment === 'PICKUP' || !!o.address, {
     message: 'Address is required for delivery orders',
@@ -66,9 +71,6 @@ export const orderQuerySchema = paginationQuerySchema.extend({
   search: z.string().optional(),
 });
 export type OrderQuery = z.infer<typeof orderQuerySchema>;
-
-/** Hours after delivery in which a customer can report a problem online. */
-export const RETURN_WINDOW_HOURS = 24;
 
 const returnItemsSchema = z
   .array(z.object({ orderItemId: z.string().min(1), quantity: z.number().int().min(1) }))

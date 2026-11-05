@@ -8,6 +8,7 @@ import { useSession } from '@/lib/session';
 const TABS = [
   { href: '/account/orders', label: 'My orders' },
   { href: '/account/addresses', label: 'Addresses' },
+  { href: '/account/wishlist', label: 'Wishlist' },
 ];
 
 /** Greeting, account tabs and sign out, shared by the account pages. */

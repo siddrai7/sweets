@@ -28,6 +28,14 @@ export class ProductsController {
     return this.catalog.listProducts({ ...q, includeInactive: staff && q.includeInactive });
   }
 
+  /** Searches customers made, most frequent first; `zero=true` for ones that found nothing. */
+  @ApiBearerAuth()
+  @Roles('ADMIN', 'STAFF')
+  @Get('search-report')
+  searchReport(@Query('zero') zero?: string) {
+    return this.catalog.searchReport(zero === 'true');
+  }
+
   /** Lookup by slug (storefront) or id (ERP). */
   @Public()
   @Get(':idOrSlug')

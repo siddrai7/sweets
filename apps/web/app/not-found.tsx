@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { SweetArt } from '@/components/art/sweet-art';
-import { artFor } from '@/lib/art';
+import { ArtImage } from '@/components/art/art-image';
 
 export default function NotFound() {
   return (
     <div className="container-page flex flex-col items-center py-16 text-center sm:py-24">
-      <SweetArt spec={artFor('rasgulla')} background={false} className="h-48 w-48" />
+      <ArtImage hints={['rasgulla']} background={false} className="h-48 w-48" />
       <p className="eyebrow mt-4">Error 404</p>
       <h1 className="mt-3 text-4xl font-light sm:text-5xl">
         This page has <em className="text-brand-600">melted away</em>

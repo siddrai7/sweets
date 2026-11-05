@@ -122,9 +122,7 @@
   h2,
   h3 {
     @apply font-display tracking-tight;
-    font-variation-settings:
-      'SOFT' 50,
-      'WONK' 0;
+    font-variation-settings: 'SOFT' 50;
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-brand-600;
@@ -155,7 +153,7 @@
 
 /* Small uppercase label above headings. */
 @utility eyebrow {
-  @apply text-[0.68rem] font-bold uppercase tracking-[0.28em] text-saffron-600;
+  @apply text-xs font-bold uppercase tracking-[0.28em] text-saffron-600;
 }
 
 @utility btn-primary {
@@ -172,7 +170,7 @@
 
 /* Filter / category pill. Add `chip-active` for the selected state. */
 @utility chip {
-  @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-[0.8rem] font-semibold text-cocoa transition hover:border-cocoa/30;
+  @apply inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-[0.8rem] font-semibold text-cocoa transition hover:border-cocoa/30;
 }
 @utility chip-active {
   @apply border-cocoa bg-cocoa text-white hover:border-cocoa;
@@ -196,5 +194,32 @@
   padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
   @media (min-width: 1024px) {
     padding-bottom: 0;
+  }
+}
+
+/* Filter / sort changes in progress (set by shop-controls). */
+html[data-pending] body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 80;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-saffron-400), var(--color-brand-600));
+  animation: pending-bar 1.2s ease-in-out infinite;
+  transform-origin: left;
+}
+html[data-pending] [data-results] {
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+@keyframes pending-bar {
+  0% {
+    transform: scaleX(0.05);
+  }
+  60% {
+    transform: scaleX(0.75);
+  }
+  100% {
+    transform: scaleX(0.95);
   }
 }

@@ -42,8 +42,13 @@ export class AuthService {
           ...(input.phone ? [{ phone: input.phone }] : []),
         ],
       },
-      select: { id: true },
+      select: { id: true, isGuest: true, email: true },
     });
+    if (existing?.isGuest && existing.email === input.email.toLowerCase()) {
+      throw new ConflictException(
+        'You have ordered with this email as a guest. Use “Forgot password” to set a password and see your orders.',
+      );
+    }
     if (existing) throw new ConflictException('An account with this email or phone already exists');
 
     const user = await this.prisma.user.create({
@@ -64,7 +69,13 @@ export class AuthService {
       where: { email: input.email.toLowerCase() },
       include: { vendor: { select: { isActive: true } } },
     });
-    if (!user || !user.isActive || !(await argon2.verify(user.passwordHash, input.password))) {
+    // Guest checkout accounts have no usable password until "Forgot password" sets one.
+    const valid =
+      !!user &&
+      user.isActive &&
+      !user.isGuest &&
+      (await argon2.verify(user.passwordHash, input.password).catch(() => false));
+    if (!user || !valid) {
       throw new UnauthorizedException('Invalid email or password');
     }
     if (vendorInactive(user)) {

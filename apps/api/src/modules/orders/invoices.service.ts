@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '../../config/env';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { amountInWords, financialYear } from './invoice-utils';
 
 type Tx = Prisma.TransactionClient;
 const Decimal = Prisma.Decimal;
@@ -53,14 +54,6 @@ const normState = (s: string) => {
   return STATE_ALIASES[k] ?? k;
 };
 
-/** Indian financial year label for a date in IST, e.g. 2026-11-04 → "26-27". */
-export function financialYear(d: Date) {
-  const ist = new Date(d.getTime() + 5.5 * 3_600_000);
-  const y = ist.getUTCFullYear();
-  const start = ist.getUTCMonth() >= 3 ? y : y - 1; // April onwards
-  return `${String(start).slice(-2)}-${String(start + 1).slice(-2)}`;
-}
-
 const esc = (v: unknown) =>
   String(v ?? '').replace(
     /[&<>"']/g,
@@ -75,66 +68,6 @@ const istDate = (d: Date) =>
     month: 'short',
     year: 'numeric',
   });
-
-/** 1234567.5 → "Rupees Twelve Lakh Thirty Four Thousand Five Hundred Sixty Seven and Fifty Paise Only" */
-export function amountInWords(amount: number) {
-  const ones = [
-    '',
-    'One',
-    'Two',
-    'Three',
-    'Four',
-    'Five',
-    'Six',
-    'Seven',
-    'Eight',
-    'Nine',
-    'Ten',
-    'Eleven',
-    'Twelve',
-    'Thirteen',
-    'Fourteen',
-    'Fifteen',
-    'Sixteen',
-    'Seventeen',
-    'Eighteen',
-    'Nineteen',
-  ];
-  const tens = [
-    '',
-    '',
-    'Twenty',
-    'Thirty',
-    'Forty',
-    'Fifty',
-    'Sixty',
-    'Seventy',
-    'Eighty',
-    'Ninety',
-  ];
-  const two = (n: number) =>
-    n < 20 ? ones[n]! : `${tens[Math.floor(n / 10)]} ${ones[n % 10]}`.trim();
-  const three = (n: number) =>
-    [n >= 100 ? `${ones[Math.floor(n / 100)]} Hundred` : '', two(n % 100)]
-      .filter(Boolean)
-      .join(' ');
-  const words = (n: number): string => {
-    if (n === 0) return 'Zero';
-    const parts: string[] = [];
-    const crore = Math.floor(n / 1e7);
-    const lakh = Math.floor((n % 1e7) / 1e5);
-    const thousand = Math.floor((n % 1e5) / 1e3);
-    const rest = n % 1e3;
-    if (crore) parts.push(`${words(crore)} Crore`);
-    if (lakh) parts.push(`${two(lakh)} Lakh`);
-    if (thousand) parts.push(`${two(thousand)} Thousand`);
-    if (rest) parts.push(three(rest));
-    return parts.join(' ');
-  };
-  const rupees = Math.floor(amount);
-  const paise = Math.round((amount - rupees) * 100);
-  return `Rupees ${words(rupees)}${paise ? ` and ${two(paise)} Paise` : ''} Only`;
-}
 
 const invoiceInclude = {
   items: { include: { variant: { select: { product: { select: { hsnCode: true } } } } } },
@@ -216,8 +149,10 @@ export class InvoicesService {
     let cgstTotal = new Decimal(0);
     const rows = order.items.map((item, i) => {
       const rate = new Decimal(item.taxRatePercent);
-      const lineTaxable = item.lineTotal.mul(100).div(rate.add(100)).toDecimalPlaces(2);
-      const lineTax = item.lineTotal.sub(lineTaxable);
+      // A coupon lowers what the customer pays for the line, and so its taxable value.
+      const net = item.lineTotal.sub(item.discount);
+      const lineTaxable = net.mul(100).div(rate.add(100)).toDecimalPlaces(2);
+      const lineTax = net.sub(lineTaxable);
       const half = lineTax.div(2).toDecimalPlaces(2);
       cgstTotal = cgstTotal.add(half);
       taxable = taxable.add(lineTaxable);
@@ -226,7 +161,7 @@ export class InvoicesService {
       const taxCells = intraState
         ? `<td class="r">${rate.div(2).toString()}%<br>${money(half)}</td><td class="r">${rate.div(2).toString()}%<br>${money(lineTax.sub(half))}</td>`
         : `<td class="r">${rate.toString()}%<br>${money(lineTax)}</td>`;
-      return `<tr><td>${i + 1}</td><td>${esc(item.productName)}<div class="muted">${esc(item.variantLabel)} · ${esc(item.sku)}</div></td><td>${esc(hsn)}</td><td class="r">${item.quantity}</td><td class="r">${money(item.unitPrice)}</td><td class="r">${money(lineTaxable)}</td>${taxCells}<td class="r">${money(item.lineTotal)}</td></tr>`;
+      return `<tr><td>${i + 1}</td><td>${esc(item.productName)}<div class="muted">${esc(item.variantLabel)} · ${esc(item.sku)}${item.discount.isZero() ? '' : ` · discount ${money(item.discount)}`}</div></td><td>${esc(hsn)}</td><td class="r">${item.quantity}</td><td class="r">${money(item.unitPrice)}</td><td class="r">${money(lineTaxable)}</td>${taxCells}<td class="r">${money(net)}</td></tr>`;
     });
     // Totals are the sum of the per-line amounts, so the invoice adds up to the paisa.
     const cgst = cgstTotal;
@@ -311,9 +246,9 @@ export class InvoicesService {
     <tr><td class="muted">Taxable value</td><td class="r">${money(taxable)}</td></tr>
     ${intraState ? `<tr><td class="muted">CGST</td><td class="r">${money(cgst)}</td></tr><tr><td class="muted">SGST</td><td class="r">${money(tax.sub(cgst))}</td></tr>` : `<tr><td class="muted">IGST</td><td class="r">${money(tax)}</td></tr>`}
     ${Number(order.deliveryFee) > 0 ? `<tr><td class="muted">Delivery charges</td><td class="r">${money(order.deliveryFee)}</td></tr>` : ''}
-    ${Number(order.discountTotal) > 0 ? `<tr><td class="muted">Discount</td><td class="r">− ${money(order.discountTotal)}</td></tr>` : ''}
     <tr class="grand"><td>Total</td><td class="r">${money(order.total)}</td></tr>
   </table>
+  ${Number(order.discountTotal) > 0 ? `<p class="muted">Item amounts are after a discount of ${money(order.discountTotal)}${order.couponCode ? ` (coupon ${esc(order.couponCode)})` : ''}.</p>` : ''}
   <div class="words"><span class="label">Amount in words</span><br>${amountInWords(Number(order.total))}</div>
   <div class="foot">
     <div class="muted">Prices are inclusive of GST. Tax is not payable on reverse charge.<br>This is a computer-generated invoice.</div>

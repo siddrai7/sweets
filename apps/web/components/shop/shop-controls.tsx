@@ -1,8 +1,9 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import { PRODUCT_SORTS, type ProductSort } from '@sweets/types';
+import { useEffect, useState, useTransition } from 'react';
+import { PRODUCT_SORTS } from '@sweets/types/constants';
+import type { ProductSort } from '@sweets/types';
 import { CheckIcon, ChevronDown, CloseIcon, SlidersIcon, SortIcon } from '@/components/ui/icons';
 import { Sheet } from '@/components/ui/sheet';
 import { PRICE_BANDS } from '@/lib/price-bands';
@@ -27,6 +28,11 @@ function useUpdateParams() {
   const pathname = usePathname();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
+  // Shown by CSS (globals.css): a progress bar, and the grid dims until new results arrive.
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-pending', pending);
+    return () => document.documentElement.removeAttribute('data-pending');
+  }, [pending]);
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(changes)) {
@@ -115,13 +121,13 @@ export function Filters() {
   return (
     <div className="space-y-7">
       <fieldset>
-        <legend className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-cocoa-soft">
+        <legend className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-cocoa-soft">
           Price
         </legend>
         <PriceOptions active={price} onPick={(id) => update({ price: id })} />
       </fieldset>
       <fieldset>
-        <legend className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-cocoa-soft">
+        <legend className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-cocoa-soft">
           Availability
         </legend>
         <StockToggle on={inStock} onChange={(on) => update({ inStock: on ? 'true' : null })} />
@@ -160,7 +166,7 @@ export function MobileControls() {
         >
           <SlidersIcon size={14} /> Filters
           {filterCount > 0 && (
-            <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[0.6rem] text-cocoa">
+            <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-xs text-cocoa">
               {filterCount}
             </span>
           )}
@@ -233,7 +239,7 @@ export function MobileControls() {
       >
         <div className="space-y-7 pt-1">
           <fieldset>
-            <legend className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-cocoa-soft">
+            <legend className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-cocoa-soft">
               Price
             </legend>
             <PriceOptions
@@ -242,7 +248,7 @@ export function MobileControls() {
             />
           </fieldset>
           <fieldset>
-            <legend className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-cocoa-soft">
+            <legend className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-cocoa-soft">
               Availability
             </legend>
             <StockToggle

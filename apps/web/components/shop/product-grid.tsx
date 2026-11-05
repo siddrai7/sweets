@@ -75,7 +75,7 @@ export function ProductGrid({ initial, query }: Props) {
   }
 
   return (
-    <div>
+    <div data-results>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4">
         {items.map((p, i) => (
           <ProductCard key={p.id} product={p} priority={i < 4} />

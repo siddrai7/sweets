@@ -85,3 +85,9 @@ export type ReturnReason = (typeof RETURN_REASONS)[number];
 
 export const REFUND_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER', 'ORIGINAL_PAYMENT'] as const;
 export type RefundMethod = (typeof REFUND_METHODS)[number];
+
+export const COUPON_TYPES = ['PERCENT', 'FLAT', 'FREE_DELIVERY'] as const;
+export type CouponType = (typeof COUPON_TYPES)[number];
+
+export const REVIEW_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];

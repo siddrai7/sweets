@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { USER_AUDIENCES } from './constants.js';
+import { VENDOR_LINK_REQUIRED } from './constants.js';
 import { paginationQuerySchema } from './common.js';
 import { ROLES } from './enums.js';
 
@@ -20,9 +22,6 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 export type RefreshInput = z.infer<typeof refreshSchema>;
-
-/** Message used wherever a VENDOR account is missing its supplier link. */
-export const VENDOR_LINK_REQUIRED = 'Vendor accounts must be linked to a vendor';
 
 // Base shape carries no defaults so the `.partial()` update schema never resets omitted fields.
 const userBaseSchema = z.object({
@@ -54,10 +53,6 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(8).max(128),
 });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
-
-/** Roles that make up the business's own team, as opposed to shoppers. */
-export const USER_AUDIENCES = ['team', 'customers'] as const;
-export type UserAudience = (typeof USER_AUDIENCES)[number];
 
 export const userQuerySchema = paginationQuerySchema.extend({
   role: z.enum(ROLES).optional(),

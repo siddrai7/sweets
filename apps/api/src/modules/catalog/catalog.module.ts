@@ -9,6 +9,6 @@ import { StorefrontCacheService } from './storefront-cache.service';
   imports: [InventoryModule],
   controllers: [CategoriesController, ProductsController],
   providers: [CatalogService, StorefrontCacheService],
-  exports: [CatalogService],
+  exports: [CatalogService, StorefrontCacheService],
 })
 export class CatalogModule {}
