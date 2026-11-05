@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ApiError } from '@sweets/api-client';
 import { formatMoney } from '@/lib/money';
-import type { AddressInput, FulfillmentType, SavedAddress } from '@sweets/types';
+import type { AddressInput, DeliverySlot, FulfillmentType, SavedAddress } from '@sweets/types';
 import {
   AddressFields,
   addressLines,
@@ -23,7 +23,10 @@ import {
   StoreIcon,
   TruckIcon,
 } from '@/components/ui/icons';
+import { browserApi } from '@/lib/browser-api';
 import { useCart } from '@/lib/cart';
+import { rememberGuestOrder } from '@/lib/guest-orders';
+import { usePincode } from '@/lib/pincode';
 import { deliveryFeeFor } from '@/lib/pricing';
 import { useSession } from '@/lib/session';
 import { site } from '@/lib/site';
@@ -40,6 +43,23 @@ export default function CheckoutPage() {
   /** A saved address id, or 'new' to type one in. */
   const [selected, setSelected] = useState<string>('new');
   const [saveNew, setSaveNew] = useState(true);
+  const [contact, setContact] = useState({ name: '', email: '', phone: '' });
+  const [slots, setSlots] = useState<DeliverySlot[] | null>(null);
+  const [slot, setSlot] = useState<string | null>(null);
+  const { current: pin, check: checkPincode } = usePincode();
+  const [pinStatus, setPinStatus] = useState<{ pincode: string; serviceable: boolean } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    browserApi.delivery
+      .slots()
+      .then((list) => {
+        setSlots(list);
+        setSlot((cur) => cur ?? list.find((s) => s.available)?.start ?? null);
+      })
+      .catch(() => setSlots([]));
+  }, []);
 
   // Returning customers pick from their saved addresses; the default is preselected.
   useEffect(() => {
@@ -54,9 +74,29 @@ export default function CheckoutPage() {
       .catch(() => setSaved([]));
   }, [user, api]);
 
+  // Guests start from the pincode they checked in the header.
   useEffect(() => {
-    if (ready && !user) router.replace('/login?next=/checkout');
-  }, [ready, user, router]);
+    if (ready && !user && pin?.pincode)
+      setAddress((a) => (a.pincode ? a : { ...a, pincode: pin.pincode }));
+  }, [ready, user, pin?.pincode]);
+
+  const savedAddress = saved?.find((a) => a.id === selected);
+  const chosenPincode = savedAddress ? savedAddress.pincode : address.pincode;
+
+  // Tell the customer straight away if we can't deliver to the address's pincode.
+  useEffect(() => {
+    if (fulfillment !== 'DELIVERY' || !/^\d{6}$/.test(chosenPincode)) {
+      setPinStatus(null);
+      return;
+    }
+    let live = true;
+    checkPincode(chosenPincode)
+      .then((r) => live && setPinStatus(r))
+      .catch(() => live && setPinStatus(null));
+    return () => {
+      live = false;
+    };
+  }, [fulfillment, chosenPincode, checkPincode]);
 
   useEffect(() => {
     if (user)
@@ -67,7 +107,7 @@ export default function CheckoutPage() {
       }));
   }, [user]);
 
-  if (!ready || !user || !loaded) return <div className="min-h-[60vh]" />;
+  if (!ready || !loaded) return <div className="min-h-[60vh]" />;
   if (!lines.length) {
     return (
       <div className="container-page py-24 text-center">
@@ -80,25 +120,51 @@ export default function CheckoutPage() {
   }
 
   const total = subtotal + deliveryFeeFor(subtotal, fulfillment);
+  const needsSlot = fulfillment === 'DELIVERY' && !!slots?.length;
+  const chosenSlot = slots?.find((s) => s.start === slot && s.available);
+  const unserviceable = fulfillment === 'DELIVERY' && pinStatus?.serviceable === false;
+  const blocked = unserviceable || (needsSlot && !chosenSlot);
 
   async function placeOrder(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    if (needsSlot && !chosenSlot) {
+      setSubmitting(false);
+      return setError('Please pick a delivery time.');
+    }
     try {
-      const savedAddress = saved?.find((a) => a.id === selected);
       const chosen = savedAddress ? toAddressInput(savedAddress) : address;
-      const { order } = await api.orders.place({
+      const isDelivery = fulfillment === 'DELIVERY';
+      const order = {
         items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
         fulfillment,
-        address:
-          fulfillment === 'DELIVERY' ? { ...chosen, line2: chosen.line2 || undefined } : undefined,
-        saveAddress: fulfillment === 'DELIVERY' && !savedAddress && saveNew,
-        paymentProvider: 'COD',
-        channel: 'WEB',
-      });
-      clear();
-      router.push(`/account/orders/${order.orderNumber}?placed=1`);
+        address: isDelivery
+          ? {
+              ...chosen,
+              name: chosen.name || contact.name,
+              phone: chosen.phone || contact.phone,
+              line2: chosen.line2 || undefined,
+            }
+          : undefined,
+        deliverySlotStart: isDelivery && chosenSlot ? new Date(chosenSlot.start) : undefined,
+        deliverySlotEnd: isDelivery && chosenSlot ? new Date(chosenSlot.end) : undefined,
+        saveAddress: !!user && isDelivery && !savedAddress && saveNew,
+        paymentProvider: 'COD' as const,
+        channel: 'WEB' as const,
+      };
+      if (user) {
+        const placed = await api.orders.place(order);
+        clear();
+        router.push(`/account/orders/${placed.order.orderNumber}?placed=1`);
+      } else {
+        const placed = await browserApi.orders.placeGuest({ order, contact });
+        rememberGuestOrder(placed.order.orderNumber, placed.token);
+        clear();
+        router.push(
+          `/orders/track/${placed.order.orderNumber}?t=${encodeURIComponent(placed.token)}&placed=1`,
+        );
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong, please try again.');
     } finally {
@@ -115,6 +181,57 @@ export default function CheckoutPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-10">
         <div className="space-y-5">
+          {!user && (
+            <Step n={0} title="Your details">
+              <p className="-mt-2 mb-4 text-sm text-cocoa-soft">
+                No account needed.{' '}
+                <Link href="/login?next=/checkout" className="font-bold text-brand-600">
+                  Sign in
+                </Link>{' '}
+                for saved addresses and order history.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="sm:col-span-2">
+                  <span className="mb-1.5 block text-xs font-bold text-cocoa-soft">Full name</span>
+                  <input
+                    required
+                    autoComplete="name"
+                    maxLength={100}
+                    value={contact.name}
+                    onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))}
+                    className="input-field"
+                  />
+                </label>
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold text-cocoa-soft">Mobile</span>
+                  <input
+                    required
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    pattern="(\+91 ?)?[6-9]\d{4} ?\d{5}"
+                    title="10-digit Indian mobile number"
+                    value={contact.phone}
+                    onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
+                    className="input-field"
+                  />
+                </label>
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold text-cocoa-soft">
+                    Email <span className="font-normal">(for your receipt)</span>
+                  </span>
+                  <input
+                    required
+                    type="email"
+                    autoComplete="email"
+                    value={contact.email}
+                    onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+                    className="input-field"
+                  />
+                </label>
+              </div>
+            </Step>
+          )}
           <Step n={1} title="How would you like it?">
             <div className="grid gap-3 sm:grid-cols-2">
               {(
@@ -165,7 +282,7 @@ export default function CheckoutPage() {
           <Step n={2} title={fulfillment === 'DELIVERY' ? 'Delivery address' : 'Pickup from'}>
             {fulfillment === 'DELIVERY' ? (
               <div className="space-y-3">
-                {saved === null && (
+                {user && saved === null && (
                   <div className="h-20 animate-pulse rounded-2xl bg-brand-100" aria-hidden />
                 )}
                 {!!saved?.length && (
@@ -215,18 +332,20 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                 )}
-                {saved !== null && selected === 'new' && (
-                  <div className={saved.length ? 'pt-2' : ''}>
-                    <AddressFields value={address} onChange={setAddress} />
-                    <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={saveNew}
-                        onChange={(e) => setSaveNew(e.target.checked)}
-                        className="h-4 w-4 accent-brand-600"
-                      />
-                      Save this address for next time
-                    </label>
+                {(!user || saved !== null) && selected === 'new' && (
+                  <div className={saved?.length ? 'pt-2' : ''}>
+                    <AddressFields value={address} onChange={setAddress} withContact={!!user} />
+                    {user && (
+                      <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={saveNew}
+                          onChange={(e) => setSaveNew(e.target.checked)}
+                          className="h-4 w-4 accent-brand-600"
+                        />
+                        Save this address for next time
+                      </label>
+                    )}
                   </div>
                 )}
                 {!!saved?.length && (
@@ -250,7 +369,13 @@ export default function CheckoutPage() {
             )}
           </Step>
 
-          <Step n={3} title="Payment">
+          {needsSlot && slots && (
+            <Step n={3} title="Delivery time">
+              <SlotPicker slots={slots} value={slot} onChange={setSlot} />
+            </Step>
+          )}
+
+          <Step n={needsSlot ? 4 : 3} title="Payment">
             <div className="space-y-2.5">
               <div className="flex items-center gap-3.5 rounded-2xl border border-cocoa bg-white p-4 ring-1 ring-cocoa">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-pista-100 text-pista-600">
@@ -316,6 +441,14 @@ export default function CheckoutPage() {
           <div className="border-t border-brand-100 pt-4">
             <BillDetails subtotal={subtotal} savings={savings} fulfillment={fulfillment} />
           </div>
+          {unserviceable && (
+            <p
+              className="rounded-xl bg-saffron-100 px-3 py-2.5 text-sm font-medium text-cocoa"
+              role="alert"
+            >
+              We don’t deliver to {pinStatus?.pincode} yet. Choose store pickup, or another address.
+            </p>
+          )}
           {error && (
             <p
               className="rounded-xl bg-brand-100 px-3 py-2.5 text-sm font-medium text-brand-700"
@@ -324,7 +457,10 @@ export default function CheckoutPage() {
               {error}
             </p>
           )}
-          <button disabled={submitting} className="btn-primary hidden w-full py-4 lg:flex">
+          <button
+            disabled={submitting || blocked}
+            className="btn-primary hidden w-full py-4 lg:flex"
+          >
             {submitLabel}
           </button>
           <p className="flex items-center justify-center gap-1.5 text-xs text-cocoa-soft">
@@ -336,13 +472,17 @@ export default function CheckoutPage() {
       {/* Sticky place-order bar on phones. */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-200 bg-white p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:hidden">
         <button
-          disabled={submitting}
+          disabled={submitting || blocked}
           className="flex w-full items-center justify-between rounded-2xl bg-brand-600 px-5 py-3.5 text-white disabled:opacity-60"
         >
           <span className="flex flex-col items-start leading-tight">
             <span className="font-extrabold tabular-nums">{formatMoney(total)}</span>
             <span className="text-xs font-semibold opacity-75">
-              {count} item{count > 1 ? 's' : ''} · cash on delivery
+              {unserviceable
+                ? 'We don’t deliver to this pincode'
+                : needsSlot && !chosenSlot
+                  ? 'Pick a delivery time'
+                  : `${count} item${count > 1 ? 's' : ''} · cash on delivery`}
             </span>
           </span>
           <span className="flex items-center gap-1 font-bold">
@@ -359,11 +499,71 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
     <section className="rounded-3xl bg-white p-5 ring-1 ring-brand-200 sm:p-6">
       <h2 className="mb-5 flex items-center gap-3 text-xl font-normal">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 font-sans text-xs font-bold text-brand-600">
-          {n}
+          {n || '★'}
         </span>
         {title}
       </h2>
       {children}
     </section>
+  );
+}
+
+/** Slots grouped by day ("Today", "Tomorrow", …); full slots are shown but disabled. */
+function SlotPicker({
+  slots,
+  value,
+  onChange,
+}: {
+  slots: DeliverySlot[];
+  value: string | null;
+  onChange: (start: string) => void;
+}) {
+  const days = [...new Set(slots.map((s) => s.date))];
+  const [day, setDay] = useState(() => slots.find((s) => s.start === value)?.date ?? days[0] ?? '');
+  const dayName = (d: string) => slots.find((s) => s.date === d)!.label.split(',')[0];
+  return (
+    <div>
+      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1" role="tablist">
+        {days.map((d) => (
+          <button
+            type="button"
+            key={d}
+            role="tab"
+            aria-selected={day === d}
+            onClick={() => setDay(d)}
+            className={`chip ${day === d ? 'chip-active' : ''}`}
+          >
+            {dayName(d)}
+          </button>
+        ))}
+      </div>
+      <div
+        className="mt-3 grid gap-2.5 sm:grid-cols-3"
+        role="radiogroup"
+        aria-label="Delivery time"
+      >
+        {slots
+          .filter((s) => s.date === day)
+          .map((s) => {
+            const on = value === s.start;
+            return (
+              <button
+                type="button"
+                key={s.start}
+                role="radio"
+                aria-checked={on}
+                disabled={!s.available}
+                onClick={() => onChange(s.start)}
+                className={`rounded-2xl border p-3.5 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-cocoa bg-white ring-1 ring-cocoa' : 'border-brand-200 bg-white hover:border-cocoa/40'}`}
+              >
+                <span className="block font-bold">{s.label.split(', ').slice(1).join(', ')}</span>
+                <span className="text-xs text-cocoa-soft">
+                  {s.available ? 'Available' : 'Full'}
+                </span>
+              </button>
+            );
+          })}
+      </div>
+    </div>
   );
 }

@@ -7,4 +7,5 @@ export * from './orders.js';
 export * from './vendors.js';
 export * from './engagement.js';
 export * from './account.js';
+export * from './delivery.js';
 export * from './models.js';

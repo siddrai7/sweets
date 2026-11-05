@@ -15,6 +15,7 @@ import type {
   ReturnStatus,
   Role,
 } from './enums.js';
+import type { Paginated } from './common.js';
 
 export interface AuthUser {
   id: string;
@@ -28,6 +29,8 @@ export interface AuthUser {
 /** A user as admins see them in the ERP's user management. */
 export interface ManagedUser extends AuthUser {
   isActive: boolean;
+  /** Created by guest checkout (no password yet). */
+  isGuest: boolean;
   lastLoginAt: string | null;
   createdAt: string;
   vendor: { id: string; name: string } | null;
@@ -81,6 +84,7 @@ export interface Product {
   category?: Pick<Category, 'id' | 'name' | 'slug'>;
   images: string[];
   tags: string[];
+  searchAliases: string[];
   isVeg: boolean;
   isActive: boolean;
   isFeatured: boolean;
@@ -207,6 +211,51 @@ export interface SavedAddress {
   state: string;
   pincode: string;
   isDefault: boolean;
+}
+
+/** A product search page: results plus a spelling suggestion when nothing matched. */
+export interface ProductSearchResult extends Paginated<Product> {
+  /** e.g. "kaju katli" for "kaju katri", shown as "Did you mean…". */
+  suggestion?: string | null;
+}
+
+export interface ServiceArea {
+  id: string;
+  pincode: string;
+  label: string;
+  isActive: boolean;
+}
+
+export interface PincodeCheck {
+  pincode: string;
+  serviceable: boolean;
+  /** Area name when serviceable. */
+  label: string | null;
+}
+
+/** One bookable delivery window. Times are ISO strings in UTC. */
+export interface DeliverySlot {
+  start: string;
+  end: string;
+  /** "Today, 3–5 pm" style label in the shop's timezone. */
+  label: string;
+  /** YYYY-MM-DD in the shop's timezone. */
+  date: string;
+  available: boolean;
+}
+
+export interface SearchTermStat {
+  term: string;
+  searches: number;
+  zeroResults: number;
+  lastResults: number;
+  lastSearchedAt: string;
+}
+
+export interface GuestOrderResponse {
+  order: Order;
+  /** Private token for the order link (/orders/track/<number>?t=<token>). Shown once. */
+  token: string;
 }
 
 export interface Location {

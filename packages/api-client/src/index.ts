@@ -1,4 +1,14 @@
 import type {
+  BulkServiceAreaInput,
+  DeliverySettings,
+  DeliverySlot,
+  GuestOrderInput,
+  GuestOrderResponse,
+  PincodeCheck,
+  ProductSearchResult,
+  SearchTermStat,
+  ServiceArea,
+  ServiceAreaInput,
   AddStockBatchInput,
   ApproveReturnInput,
   AdjustStockInput,
@@ -146,6 +156,20 @@ export function createApiClient(options: ApiClientOptions) {
         patch<SavedAddress>(`/me/addresses/${id}`, input),
       deleteAddress: (id: string) => del<void>(`/me/addresses/${id}`),
     },
+    delivery: {
+      check: (pincode: string) => get<PincodeCheck>('/delivery/check', { pincode }),
+      slots: () => get<DeliverySlot[]>('/delivery/slots'),
+      settings: () => get<DeliverySettings>('/delivery/settings'),
+      updateSettings: (input: DeliverySettings) =>
+        put<DeliverySettings>('/delivery/settings', input),
+      areas: () => get<ServiceArea[]>('/delivery/areas'),
+      createArea: (input: ServiceAreaInput) => post<ServiceArea>('/delivery/areas', input),
+      bulkAreas: (input: BulkServiceAreaInput) =>
+        post<{ added: number }>('/delivery/areas/bulk', input),
+      updateArea: (id: string, input: Partial<ServiceAreaInput>) =>
+        patch<ServiceArea>(`/delivery/areas/${id}`, input),
+      deleteArea: (id: string) => del<void>(`/delivery/areas/${id}`),
+    },
     returns: {
       list: (q: Partial<ReturnQuery> = {}) => get<Paginated<ReturnRequest>>('/returns', q),
       approve: (id: string, input: ApproveReturnInput) =>
@@ -168,7 +192,10 @@ export function createApiClient(options: ApiClientOptions) {
       updateCategory: (id: string, input: CategoryUpdateInput) =>
         patch<Category>(`/categories/${id}`, input),
       products: (q: Partial<ProductQuery> = {}, init?: FetchInit) =>
-        get<Paginated<Product>>('/products', q, init),
+        get<ProductSearchResult>('/products', q, init),
+      /** Staff: what customers search for (`zeroOnly`: searches that found nothing). */
+      searchReport: (zeroOnly = false) =>
+        get<SearchTermStat[]>('/products/search-report', { zero: zeroOnly || undefined }),
       product: (idOrSlug: string, init?: FetchInit) =>
         get<Product>(`/products/${encodeURIComponent(idOrSlug)}`, undefined, init),
       createProduct: (input: ProductInput) => post<Product>('/products', input),
@@ -186,6 +213,12 @@ export function createApiClient(options: ApiClientOptions) {
       /** By id or order number. */
       get: (idOrNumber: string) => get<Order>(`/orders/${encodeURIComponent(idOrNumber)}`),
       cancel: (id: string) => post<Order>(`/orders/${id}/cancel`),
+      /** Checkout without an account. Keep the returned token: it opens the order later. */
+      placeGuest: (input: GuestOrderInput) => post<GuestOrderResponse>('/orders/guest', input),
+      getGuest: (orderNumber: string, token: string) =>
+        get<Order>(`/orders/guest/${encodeURIComponent(orderNumber)}`, { token }),
+      guestInvoiceHtml: (orderNumber: string, token: string) =>
+        get<string>(`/orders/guest/${encodeURIComponent(orderNumber)}/invoice`, { token }),
       /** Printable GST tax invoice as an HTML document (issued on delivery). */
       invoiceHtml: (idOrNumber: string) =>
         get<string>(`/orders/${encodeURIComponent(idOrNumber)}/invoice`),

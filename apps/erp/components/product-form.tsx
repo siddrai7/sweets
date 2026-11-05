@@ -33,6 +33,7 @@ interface Draft {
   description: string;
   images: string[];
   tags: string[];
+  searchAliases: string[];
   isVeg: boolean;
   isFeatured: boolean;
   shelfLifeDays: string;
@@ -79,6 +80,7 @@ function fromProduct(p?: Product): Draft {
     description: p?.description ?? '',
     images: p?.images ?? [],
     tags: p?.tags ?? [],
+    searchAliases: p?.searchAliases ?? [],
     isVeg: p?.isVeg ?? true,
     isFeatured: p?.isFeatured ?? false,
     shelfLifeDays: p?.shelfLifeDays?.toString() ?? '',
@@ -134,6 +136,7 @@ function toPayload(d: Draft): Omit<ProductInput, 'isActive'> {
     description: orNull(d.description),
     images: d.images,
     tags: d.tags,
+    searchAliases: d.searchAliases,
     isVeg: d.isVeg,
     isFeatured: d.isFeatured,
     shelfLifeDays: intOrNull(d.shelfLifeDays),
@@ -691,6 +694,14 @@ export function ProductForm({ product }: { product?: Product }) {
                 set('tags', [...draft.tags.filter((x) => !customTags.includes(x)), ...t])
               }
             />
+            <TagInput
+              label="Other names"
+              hint="Spellings and local names, e.g. laddu, motichoor laddoo. Search finds them too."
+              placeholder="Add a name"
+              max={40}
+              tags={draft.searchAliases}
+              onChange={(t) => set('searchAliases', t.slice(0, 20))}
+            />
           </Section>
 
           <Section title="Tax">
@@ -868,15 +879,29 @@ function ImageList({ images, onChange }: { images: string[]; onChange: (v: strin
   );
 }
 
-function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) => void }) {
+function TagInput({
+  tags,
+  onChange,
+  label = 'Search tags',
+  hint = 'Extra words customers might search for, e.g. diwali, gifting.',
+  placeholder,
+  max = 30,
+}: {
+  tags: string[];
+  onChange: (t: string[]) => void;
+  label?: string;
+  hint?: string;
+  placeholder?: string;
+  max?: number;
+}) {
   const [value, setValue] = useState('');
   const commit = () => {
-    const t = value.trim().toLowerCase().slice(0, 30);
+    const t = value.trim().toLowerCase().slice(0, max);
     if (t && !tags.includes(t)) onChange([...tags, t]);
     setValue('');
   };
   return (
-    <Field label="Search tags" hint="Extra words customers might search for, e.g. diwali, gifting.">
+    <Field label={label} hint={hint}>
       <div className="flex flex-wrap gap-1.5 rounded-lg border border-slate-300 bg-white p-1.5 focus-within:border-brand-600">
         {tags.map((t) => (
           <span
@@ -906,6 +931,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
             }
           }}
           onBlur={commit}
+          placeholder={placeholder}
           className="min-w-24 flex-1 px-1 text-sm focus:outline-none"
         />
       </div>

@@ -57,6 +57,8 @@ const productBaseSchema = z.object({
   categoryId: z.string().min(1, 'Choose a category'),
   images: z.array(z.url()).max(10),
   tags: z.array(z.string().trim().toLowerCase().min(1).max(30)).max(20),
+  /** Other names customers search for ("laddu", "burfi"). */
+  searchAliases: z.array(z.string().trim().toLowerCase().min(1).max(40)).max(20),
   isVeg: z.boolean(),
   isActive: z.boolean(),
   isFeatured: z.boolean(),
@@ -79,6 +81,7 @@ const productBaseSchema = z.object({
 export const productInputSchema = productBaseSchema.extend({
   images: z.array(z.url()).default([]),
   tags: z.array(z.string()).default([]),
+  searchAliases: z.array(z.string().trim().toLowerCase().min(1).max(40)).max(20).default([]),
   isVeg: z.boolean().default(true),
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
@@ -103,6 +106,8 @@ export const productQuerySchema = paginationQuerySchema.extend({
   exclude: z.string().optional(),
   sort: z.enum(PRODUCT_SORTS).default('featured'),
   includeInactive: z.stringbool().optional(),
+  /** Record this search in the ERP's search report (set by the storefront search page). */
+  log: z.stringbool().optional(),
   /** Staff only, with `includeInactive`: show only live (true) or only archived (false) products. */
   isActive: z.stringbool().optional(),
 });

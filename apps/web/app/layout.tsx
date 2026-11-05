@@ -5,6 +5,7 @@ import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { CartToast, MobileNav } from '@/components/layout/mobile-nav';
 import { CartProvider } from '@/lib/cart';
+import { PincodeProvider } from '@/lib/pincode';
 import { SessionProvider } from '@/lib/session';
 import { site } from '@/lib/site';
 import './globals.css';
@@ -67,14 +68,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
         />
         <SessionProvider>
-          <CartProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <MobileNav />
-            <CartDrawer />
-            <CartToast />
-          </CartProvider>
+          <PincodeProvider>
+            <CartProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <MobileNav />
+              <CartDrawer />
+              <CartToast />
+            </CartProvider>
+          </PincodeProvider>
         </SessionProvider>
       </body>
     </html>

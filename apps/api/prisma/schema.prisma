@@ -29,6 +29,8 @@ model User {
   passwordHash String
   role         Role      @default(CUSTOMER)
   isActive     Boolean   @default(true)
+  /// Created by guest checkout: no usable password, orders reached by a private link.
+  isGuest      Boolean   @default(false)
   /// Set only for VENDOR users — the supplier they log in on behalf of.
   vendorId     String?
   vendor       Vendor?   @relation(fields: [vendorId], references: [id])
@@ -123,6 +125,8 @@ model Product {
   category            Category @relation(fields: [categoryId], references: [id])
   images              String[]
   tags                String[]
+  /// Other names customers search for, e.g. "laddu", "burfi". Matched by storefront search.
+  searchAliases       String[] @default([])
   isVeg               Boolean  @default(true)
   isActive            Boolean  @default(true)
   isFeatured          Boolean  @default(false)
@@ -386,6 +390,8 @@ model Order {
   notes             String?
   /// GST tax invoice, issued when the order is delivered (or collected). Sequential per
   /// financial year, e.g. "MH/26-27/00042".
+  /// SHA-256 of the private link token for guest orders (raw token is never stored).
+  guestTokenHash    String?         @unique
   invoiceNumber     String?         @unique
   invoicedAt        DateTime?
   createdAt         DateTime        @default(now())
@@ -521,6 +527,38 @@ model ReturnRequest {
 
   @@index([orderId])
   @@index([status, createdAt])
+}
+
+// ───────────────────────────── Delivery & search ─────────────────────────────
+
+/// Pincodes the shop delivers to. While this table is empty, every pincode is accepted.
+model ServiceArea {
+  id        String   @id @default(cuid())
+  pincode   String   @unique
+  /// e.g. "Thane West", shown to the customer.
+  label     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Small key/value settings edited in the ERP, e.g. delivery slots and closures.
+model StoreSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+/// What customers search for, for the ERP's search report.
+model SearchTerm {
+  term           String   @id
+  searches       Int      @default(0)
+  zeroResults    Int      @default(0)
+  lastResults    Int      @default(0)
+  lastSearchedAt DateTime @default(now())
+
+  @@index([zeroResults])
+  @@index([searches])
 }
 
 // ───────────────────────────── Website engagement ─────────────────────────────

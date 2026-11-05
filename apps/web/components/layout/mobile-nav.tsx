@@ -28,7 +28,7 @@ export function MobileNav() {
       active: pathname.startsWith('/categories') || pathname.startsWith('/shop'),
     },
     {
-      href: user ? '/account/orders' : '/login?next=/account/orders',
+      href: user ? '/account/orders' : '/orders/track',
       label: 'Orders',
       icon: ReceiptIcon,
       active: pathname.startsWith('/account'),

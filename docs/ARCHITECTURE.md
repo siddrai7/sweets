@@ -115,6 +115,25 @@ method, or reject with a reason, and can also record a refund directly. Refunds 
 what's left of the order total; when they cover it all, `ReturnsService` moves the order to
 `REFUNDED` via `OrdersService`. `REFUNDED` can't be set by hand.
 
+**Search.** `CatalogService.searchIds()` matches every word of the query (after
+`search-normalize.ts` folds spelling variants: laddu→ladoo, burfi→barfi, katri→katli…) against
+name, tags, `Product.searchAliases` ("Other names" in the ERP), category, parent category and
+SKUs. If nothing matches it falls back to `pg_trgm` similarity and returns a `suggestion`
+("Did you mean…"). The storefront logs searches from the browser (`log=true`) into `SearchTerm`;
+the ERP's _Customer searches_ page lists those that found nothing.
+
+**Delivery.** `ServiceArea` pincodes limit where delivery is offered (none configured = deliver
+anywhere). Time slots, preparation lead time, days ahead, same-day cut-off and closed dates live
+in `StoreSetting` key `delivery`, edited on the ERP _Delivery_ page. `DeliveryService.slots()`
+computes slots in IST (`ist.ts`) and honours per-slot capacity; `OrdersService.place()` calls
+`assertDeliverable()` so the API enforces pincode and slot even if the UI is bypassed.
+
+**Guest checkout.** `POST /orders/guest` places an order without an account. One guest `User`
+(`isGuest`, unusable password) is kept per email; an email that belongs to a real account must
+sign in. The customer gets a private tracking link (`/orders/track/<number>?t=<token>`); only the
+token's SHA-256 is stored (`Order.guestTokenHash`). Guests can't sign in until they set a
+password, which turns the record into a normal account.
+
 **Recipes (bill of materials)** are modelled (`RecipeItem`: raw material quantity per unit of a
 variant) but not yet used to auto-deduct raw materials on production. That is Phase 2.
 
@@ -180,6 +199,8 @@ without it an archived product would stay visible. Configure `STOREFRONT_REVALID
 | Hero banners, trust points, testimonials                | `content/home.ts` (moves to the ERP later)                            |
 | Policy pages (template text, needs client/legal review) | `content/policies.ts`                                                 |
 | Product image or placeholder art                        | `components/product/product-image.tsx`                                |
+| Delivery pincode the customer checked (header, product) | `lib/pincode.tsx` (localStorage)                                      |
+| Guest orders placed on this device                      | `lib/guest-orders.ts`, page `app/orders/track`                        |
 
 Categories are a tree (`Category.parentId`). `/shop/<slug>` works for both levels, and filtering by
 a parent includes its sub-categories. Homepage rows are driven by product tags: `bestseller`,

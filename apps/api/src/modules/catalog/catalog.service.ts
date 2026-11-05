@@ -10,6 +10,7 @@ import type {
 import type { Prisma } from '../../generated/prisma/client';
 import { pageArgs, paginated } from '../../common/utils/pagination';
 import { withUniqueMessages } from '../../common/utils/prisma-errors';
+import { normalizeQuery, queryTokens } from './search-normalize';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { StorefrontCacheService } from './storefront-cache.service';
@@ -53,6 +54,7 @@ export class CatalogService {
 
   async listProducts(q: ProductQuery) {
     const now = new Date();
+    const search = q.search?.trim() ? await this.searchIds(q.search, !q.includeInactive) : null;
     const where: Prisma.ProductWhereInput = {
       ...(!q.includeInactive
         ? { isActive: true }
@@ -74,15 +76,7 @@ export class CatalogService {
           },
         },
       }),
-      ...(q.search && {
-        OR: [
-          { name: { contains: q.search, mode: 'insensitive' } },
-          { description: { contains: q.search, mode: 'insensitive' } },
-          { tags: { has: q.search.toLowerCase() } },
-          { category: { name: { contains: q.search, mode: 'insensitive' } } },
-          { variants: { some: { sku: { contains: q.search, mode: 'insensitive' } } } },
-        ],
-      }),
+      ...(search && { id: { in: search.ids } }),
     };
     const [items, total] = await Promise.all([
       this.prisma.product.findMany({
@@ -93,7 +87,81 @@ export class CatalogService {
       }),
       this.prisma.product.count({ where }),
     ]);
-    return paginated(await this.withAvailability(items, !q.includeInactive), total, q);
+    if (search && q.log && q.page === 1) await this.logSearch(search.term, total);
+    return {
+      ...paginated(await this.withAvailability(items, !q.includeInactive), total, q),
+      suggestion: search?.suggestion ?? null,
+    };
+  }
+
+  /**
+   * Product ids matching a customer's search. Every word (after spelling normalisation) must
+   * appear in the name, description, tags, other names, SKU or category. If nothing matches,
+   * fall back to fuzzy name matching (pg_trgm) and suggest the closest name.
+   */
+  private async searchIds(raw: string, activeOnly: boolean) {
+    const term = normalizeQuery(raw);
+    const tokens = queryTokens(term);
+    if (!tokens.length) return { term, ids: [] as string[], suggestion: null };
+    const patterns = tokens.map((t) => `%${t}%`);
+    const exact = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT p.id FROM "Product" p
+      JOIN "Category" c ON c.id = p."categoryId"
+      LEFT JOIN "Category" parent ON parent.id = c."parentId"
+      WHERE (${!activeOnly} OR p."isActive")
+        AND ' ' || regexp_replace(lower(
+              p.name || ' ' || coalesce(p.description, '') || ' ' ||
+              coalesce(array_to_string(p.tags, ' '), '') || ' ' ||
+              coalesce(array_to_string(p."searchAliases", ' '), '') || ' ' ||
+              c.name || ' ' || coalesce(parent.name, '') || ' ' ||
+              coalesce((SELECT string_agg(v.sku, ' ') FROM "ProductVariant" v WHERE v."productId" = p.id), '')
+            ), '[^a-z0-9]+', ' ', 'g') || ' ' LIKE ALL (${patterns}::text[])`;
+    if (exact.length) return { term, ids: exact.map((r) => r.id), suggestion: null };
+
+    const fuzzy = await this.prisma.$queryRaw<{ id: string; name: string; score: number }[]>`
+      SELECT p.id, p.name, GREATEST(
+               word_similarity(${term}, lower(p.name)),
+               similarity(${term}, lower(p.name)),
+               COALESCE((SELECT max(similarity(${term}, a)) FROM unnest(coalesce(p."searchAliases", '{}')) a), 0)
+             ) AS score
+      FROM "Product" p
+      WHERE (${!activeOnly} OR p."isActive")
+      ORDER BY score DESC
+      LIMIT 12`;
+    const close = fuzzy.filter((r) => r.score >= 0.35);
+    return {
+      term,
+      ids: close.map((r) => r.id),
+      suggestion: close[0]?.name.toLowerCase() ?? null,
+    };
+  }
+
+  private logSearch(term: string, results: number) {
+    if (!term || term.length > 100) return Promise.resolve();
+    return this.prisma.searchTerm
+      .upsert({
+        where: { term },
+        create: { term, searches: 1, zeroResults: results ? 0 : 1, lastResults: results },
+        update: {
+          searches: { increment: 1 },
+          zeroResults: results ? undefined : { increment: 1 },
+          lastResults: results,
+          lastSearchedAt: new Date(),
+        },
+      })
+      .then(() => undefined)
+      .catch(() => undefined);
+  }
+
+  /** What customers search for, for the ERP report. */
+  searchReport(zeroOnly: boolean) {
+    return this.prisma.searchTerm.findMany({
+      where: zeroOnly ? { zeroResults: { gt: 0 } } : undefined,
+      orderBy: zeroOnly
+        ? [{ zeroResults: 'desc' }, { lastSearchedAt: 'desc' }]
+        : [{ searches: 'desc' }],
+      take: 100,
+    });
   }
 
   /** A category slug resolves to itself plus every sub-category beneath it. */

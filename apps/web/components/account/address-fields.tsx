@@ -16,9 +16,12 @@ export const emptyAddress: AddressInput = {
 export function AddressFields({
   value,
   onChange,
+  withContact = true,
 }: {
   value: AddressInput;
   onChange: (v: AddressInput) => void;
+  /** Off when name and mobile are asked for elsewhere (guest checkout). */
+  withContact?: boolean;
 }) {
   const field = (
     key: keyof AddressInput,
@@ -38,8 +41,9 @@ export function AddressFields({
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {field('name', 'Full name', { required: true, autoComplete: 'name' })}
-      {field('phone', 'Mobile number', { required: true, inputMode: 'tel', autoComplete: 'tel' })}
+      {withContact && field('name', 'Full name', { required: true, autoComplete: 'name' })}
+      {withContact &&
+        field('phone', 'Mobile number', { required: true, inputMode: 'tel', autoComplete: 'tel' })}
       <div className="sm:col-span-2">
         {field('line1', 'Flat, building, street', {
           required: true,

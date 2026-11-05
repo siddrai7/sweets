@@ -206,6 +206,11 @@ function Users() {
                   </Td>
                   <Td>
                     <Badge tone={ROLE_TONE[u.role]}>{ROLE_INFO[u.role].label}</Badge>
+                    {u.isGuest && (
+                      <span className="ml-1.5" title="Ordered without creating an account">
+                        <Badge tone="amber">Guest</Badge>
+                      </span>
+                    )}
                     {u.vendor && <div className="mt-1 text-xs text-slate-500">{u.vendor.name}</div>}
                   </Td>
                   <Td className="whitespace-nowrap">{u.phone ?? '—'}</Td>

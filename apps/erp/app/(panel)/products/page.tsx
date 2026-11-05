@@ -38,7 +38,7 @@ function ProductsList() {
   const params = useSearchParams();
   const [status, setStatus] = useState<Status>('live');
   const [category, setCategory] = useState(params.get('category') ?? '');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(params.get('search') ?? '');
   const [page, setPage] = useState(1);
   const q = useDebounced(search.trim());
 

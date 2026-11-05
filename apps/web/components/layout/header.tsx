@@ -1,39 +1,18 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { BoltIcon, ChevronDown } from '@/components/ui/icons';
+import { ChevronDown } from '@/components/ui/icons';
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
 import { buildCategoryTree } from '@/lib/categories';
 import { site } from '@/lib/site';
 import { AccountLink, Announcements, CartButton, CartIconButton } from './header-client';
 import { Logo } from './logo';
+import { DeliveryBadge } from './pincode-picker';
 import { SearchBox } from './search-box';
 
 const PAGES = [
   { href: '/our-story', label: 'Our story' },
   { href: '/contact', label: 'Contact' },
 ];
-
-function DeliveryBadge({ className = '' }: { className?: string }) {
-  return (
-    <Link
-      href="/policies/shipping"
-      className={`group flex items-center gap-2.5 rounded-2xl transition ${className}`}
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-saffron-100 text-saffron-600">
-        <BoltIcon size={18} />
-      </span>
-      <span className="flex flex-col leading-tight">
-        <span className="text-sm font-extrabold tracking-tight">
-          Delivery in {site.delivery.eta}
-        </span>
-        <span className="flex items-center gap-0.5 text-[0.72rem] text-cocoa-soft">
-          {site.delivery.area}
-          <ChevronDown size={12} className="transition group-hover:translate-y-0.5" />
-        </span>
-      </span>
-    </Link>
-  );
-}
 
 const searchFallback = (
   <div className="h-12 w-full rounded-2xl border border-brand-200 bg-white" aria-hidden />

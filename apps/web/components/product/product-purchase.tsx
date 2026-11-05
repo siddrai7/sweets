@@ -8,6 +8,8 @@ import { BagIcon, BoltIcon, CheckIcon, StoreIcon } from '@/components/ui/icons';
 import { useCart } from '@/lib/cart';
 import { isAvailable, percentOff, perKg, toCartLine } from '@/lib/pricing';
 import { site } from '@/lib/site';
+import { PincodeSheet } from '@/components/layout/pincode-picker';
+import { usePincode } from '@/lib/pincode';
 import { AddButton } from './add-button';
 
 export function ProductPurchase({ product }: { product: Product }) {
@@ -15,6 +17,8 @@ export function ProductPurchase({ product }: { product: Product }) {
   const { add, quantityOf, count, subtotal, openCart, loaded } = useCart();
   const firstAvailable = product.variants.find(isAvailable) ?? product.variants[0];
   const [variantId, setVariantId] = useState(firstAvailable?.id);
+  const { current: pin } = usePincode();
+  const [checkingPin, setCheckingPin] = useState(false);
 
   const variant = product.variants.find((v) => v.id === variantId);
   const available = variant?.available ?? 0;
@@ -138,7 +142,18 @@ export function ProductPurchase({ product }: { product: Product }) {
             <BoltIcon size={20} />
           </span>
           <div className="text-sm">
-            <p className="font-bold">Delivery in {site.delivery.eta}</p>
+            <p className="font-bold">
+              {pin && !pin.serviceable
+                ? `We don’t deliver to ${pin.pincode} yet`
+                : `Delivery in ${site.delivery.eta}${pin ? ` to ${pin.pincode}` : ''}`}
+            </p>
+            <button
+              type="button"
+              onClick={() => setCheckingPin(true)}
+              className="text-xs font-bold text-brand-600 hover:underline"
+            >
+              {pin ? 'Change pincode' : 'Check your pincode'}
+            </button>
             <p className="text-cocoa-soft">
               Same-day across {site.delivery.area} on orders before {site.delivery.sameDayCutoff}.
               Free delivery above ₹{site.freeDeliveryAbove}.
@@ -157,6 +172,8 @@ export function ProductPurchase({ product }: { product: Product }) {
           </div>
         </div>
       </div>
+
+      {checkingPin && <PincodeSheet onClose={() => setCheckingPin(false)} />}
 
       {/* Sticky add bar on phones. */}
       {variant && (

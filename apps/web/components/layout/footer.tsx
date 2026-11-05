@@ -86,7 +86,7 @@ export async function Footer() {
         <FooterLinks
           title="Help"
           links={[
-            { href: '/account/orders', label: 'Track my order' },
+            { href: '/orders/track', label: 'Track my order' },
             { href: '/our-story', label: 'Our story' },
             { href: '/contact', label: 'Contact us' },
             { href: '/policies/shipping', label: 'Shipping policy' },
