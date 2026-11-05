@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PRODUCT_SORTS } from './constants.js';
 import { moneySchema, paginationQuerySchema, slugSchema } from './common.js';
 
 // Base shapes carry no defaults so `.partial()` update schemas never reset omitted fields.
@@ -87,16 +88,6 @@ export type ProductInput = z.infer<typeof productInputSchema>;
 
 export const productUpdateSchema = productBaseSchema.partial();
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
-
-export const PRODUCT_SORTS = [
-  'featured',
-  'price-asc',
-  'price-desc',
-  'name-asc',
-  'name-desc',
-  'newest',
-] as const;
-export type ProductSort = (typeof PRODUCT_SORTS)[number];
 
 export const productQuerySchema = paginationQuerySchema.extend({
   /** Category slug; includes products in its sub-categories. */

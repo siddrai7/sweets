@@ -52,7 +52,7 @@ export function MobileNav() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 window.dispatchEvent(new Event(OPEN_SEARCH_EVENT));
               }}
-              className="flex h-full w-full flex-col items-center justify-center gap-1 text-[0.68rem] font-semibold text-cocoa-soft"
+              className="flex h-full w-full flex-col items-center justify-center gap-1 text-xs font-semibold text-cocoa-soft"
             >
               <SearchIcon size={22} />
               Search
@@ -81,7 +81,7 @@ function Tab({
       <Link
         href={href}
         aria-current={active ? 'page' : undefined}
-        className={`relative flex h-full flex-col items-center justify-center gap-1 text-[0.68rem] font-semibold transition ${
+        className={`relative flex h-full flex-col items-center justify-center gap-1 text-xs font-semibold transition ${
           active ? 'text-brand-600' : 'text-cocoa-soft'
         }`}
       >

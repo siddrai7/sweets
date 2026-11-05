@@ -1,10 +1,5 @@
-import {
-  ORDER_STATUS_TRANSITIONS,
-  type FulfillmentType,
-  type OrderStatus,
-  type RefundMethod,
-  type ReturnReason,
-} from '@sweets/types';
+import { ORDER_STATUS_TRANSITIONS } from '@sweets/types/constants';
+import type { FulfillmentType, OrderStatus, RefundMethod, ReturnReason } from '@sweets/types';
 
 export const STATUS_TONE: Record<OrderStatus, 'green' | 'amber' | 'red' | 'blue' | 'slate'> = {
   PENDING_PAYMENT: 'amber',

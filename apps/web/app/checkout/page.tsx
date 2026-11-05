@@ -190,7 +190,7 @@ export default function CheckoutPage() {
                             <span className="flex flex-wrap items-center gap-2 font-bold">
                               {a.label ?? a.name}
                               {a.isDefault && (
-                                <span className="rounded bg-brand-100 px-1.5 py-0.5 text-[0.62rem] uppercase tracking-wider text-cocoa-soft">
+                                <span className="rounded bg-brand-100 px-1.5 py-0.5 text-xs uppercase tracking-wider text-cocoa-soft">
                                   Default
                                 </span>
                               )}
@@ -299,7 +299,7 @@ export default function CheckoutPage() {
                     sizes="48px"
                     className="h-12 w-12 rounded-xl"
                   />
-                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-cocoa px-1 text-[0.62rem] font-bold text-white">
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-cocoa px-1 text-xs font-bold text-white">
                     {l.quantity}
                   </span>
                 </span>
@@ -341,7 +341,7 @@ export default function CheckoutPage() {
         >
           <span className="flex flex-col items-start leading-tight">
             <span className="font-extrabold tabular-nums">{formatMoney(total)}</span>
-            <span className="text-[0.7rem] font-semibold opacity-75">
+            <span className="text-xs font-semibold opacity-75">
               {count} item{count > 1 ? 's' : ''} · cash on delivery
             </span>
           </span>

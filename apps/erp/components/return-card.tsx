@@ -3,7 +3,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { formatMoney } from '@sweets/api-client';
-import { REFUND_METHODS, type Order, type RefundMethod, type ReturnRequest } from '@sweets/types';
+import { REFUND_METHODS } from '@sweets/types/constants';
+import type { Order, RefundMethod, ReturnRequest } from '@sweets/types';
 import { Badge, Button, Field, fmtDate, inputCls } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { REFUND_METHOD_LABEL, RETURN_REASON_LABEL, statusLabel } from '@/lib/orders';

@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@sweets/api-client';
-import { MAX_SAVED_ADDRESSES, type AddressInput, type SavedAddress } from '@sweets/types';
+import { MAX_SAVED_ADDRESSES } from '@sweets/types/constants';
+import type { AddressInput, SavedAddress } from '@sweets/types';
 import { AccountHeader } from '@/components/account/account-nav';
 import {
   AddressFields,
@@ -79,7 +80,7 @@ export default function AddressesPage() {
                 <p className="flex items-center gap-2 font-bold">
                   {a.label ?? 'Address'}
                   {a.isDefault && (
-                    <span className="rounded bg-cocoa px-1.5 py-0.5 text-[0.62rem] uppercase tracking-wider text-white">
+                    <span className="rounded bg-cocoa px-1.5 py-0.5 text-xs uppercase tracking-wider text-white">
                       Default
                     </span>
                   )}

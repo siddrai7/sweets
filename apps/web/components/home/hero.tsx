@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SweetArt } from '@/components/art/sweet-art';
+import { ArtImage } from '@/components/art/art-image';
 import { ArrowRight, StarIcon } from '@/components/ui/icons';
 import { heroFeatures } from '@/content/home';
 import { artFor } from '@/lib/art';
@@ -23,7 +23,7 @@ function FreshSeal() {
         </text>
       </svg>
       <span className="absolute inset-0 flex flex-col items-center justify-center text-center font-display text-saffron-300">
-        <span className="text-[0.6rem] font-sans font-bold uppercase tracking-[0.2em]">Est.</span>
+        <span className="text-xs font-sans font-bold uppercase tracking-[0.2em]">Est.</span>
         <span className="text-2xl italic leading-none">{site.established}</span>
       </span>
     </div>
@@ -73,7 +73,7 @@ export function Hero() {
             <span className="h-px w-8 bg-saffron-400" />
             Thane&apos;s mithaiwala since {site.established}
           </p>
-          <h1 className="mt-5 text-[2.7rem] font-light leading-[0.98] tracking-[-0.02em] sm:text-7xl lg:text-[5.4rem]">
+          <h1 className="mt-5 text-[2.7rem] font-light leading-[0.98] tracking-[-0.02em] sm:text-7xl lg:text-[4.1rem] xl:text-[4.55rem]">
             Mithai, made <em className="font-normal text-brand-600">fresh</em>
             <br className="hidden sm:block" /> every morning.
           </h1>
@@ -100,7 +100,7 @@ export function Hero() {
               <div key={label} className="px-3 first:pl-0">
                 <dt className="sr-only">{label}</dt>
                 <dd className="font-display text-2xl sm:text-3xl">{value}</dd>
-                <dd className="text-[0.7rem] font-semibold uppercase tracking-wider text-cocoa-soft">
+                <dd className="text-xs font-semibold uppercase tracking-wider text-cocoa-soft">
                   {label}
                 </dd>
               </div>
@@ -116,9 +116,10 @@ export function Hero() {
               className="group relative row-span-2 overflow-hidden rounded-[2rem] shadow-card"
               style={{ backgroundColor: artFor(main.slug).tone.bg }}
             >
-              <SweetArt
-                spec={artFor(main.slug)}
+              <ArtImage
+                hints={[main.slug]}
                 fit="meet"
+                priority
                 className="absolute inset-0 h-full w-full -translate-y-6 scale-125 transition duration-700 group-hover:scale-[1.3]"
               />
               <span className="absolute inset-x-3 bottom-3 flex items-center justify-between rounded-2xl bg-white/85 px-4 py-3 backdrop-blur-md">
@@ -140,8 +141,8 @@ export function Hero() {
               href={`/products/${f.slug}`}
               className="group relative overflow-hidden rounded-[1.6rem] bg-white shadow-card"
             >
-              <SweetArt
-                spec={artFor(f.slug)}
+              <ArtImage
+                hints={[f.slug]}
                 className="h-full w-full transition duration-700 group-hover:scale-105"
               />
               <span className="absolute bottom-2.5 left-2.5 rounded-full bg-white/85 px-3 py-1 text-xs font-bold backdrop-blur-md">

@@ -57,7 +57,7 @@ export function ProductPurchase({ product }: { product: Product }) {
 
       {product.variants.length > 1 && (
         <fieldset>
-          <legend className="mb-3 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-cocoa-soft">
+          <legend className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-cocoa-soft">
             Select pack size
           </legend>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -82,7 +82,7 @@ export function ProductPurchase({ product }: { product: Product }) {
                     </span>
                   )}
                   {vOff > 0 && (
-                    <span className="mb-1 inline-block rounded bg-pista-100 px-1.5 text-[0.62rem] font-extrabold text-pista-600">
+                    <span className="mb-1 inline-block rounded bg-pista-100 px-1.5 text-xs font-extrabold text-pista-600">
                       {vOff}% OFF
                     </span>
                   )}
@@ -91,7 +91,7 @@ export function ProductPurchase({ product }: { product: Product }) {
                     {out ? 'Sold out' : formatMoney(v.price)}
                   </span>
                   {perKg(v) && !out && (
-                    <span className="block text-[0.68rem] text-cocoa-soft">
+                    <span className="block text-xs text-cocoa-soft">
                       {formatMoney(perKg(v)!)}/kg
                     </span>
                   )}
@@ -117,7 +117,7 @@ export function ProductPurchase({ product }: { product: Product }) {
             <button
               onClick={() => variant && add(toCartLine(product, variant))}
               disabled={soldOut}
-              className="btn-primary h-12 w-full rounded-xl text-[0.95rem]"
+              className="btn-primary h-12 w-full whitespace-nowrap rounded-xl px-3 text-[0.95rem]"
             >
               <BagIcon size={18} /> {soldOut ? 'Sold out for today' : 'Add to cart'}
             </button>
@@ -126,7 +126,7 @@ export function ProductPurchase({ product }: { product: Product }) {
         <button
           onClick={inCart > 0 ? openCart : buyNow}
           disabled={soldOut}
-          className="btn-outline h-12 flex-1 rounded-xl text-[0.95rem]"
+          className="btn-outline h-12 flex-1 whitespace-nowrap rounded-xl px-3 text-[0.95rem]"
         >
           {inCart > 0 ? 'View cart' : 'Buy now'}
         </button>
@@ -182,7 +182,7 @@ export function ProductPurchase({ product }: { product: Product }) {
                 className="flex h-12 shrink-0 flex-col items-center justify-center rounded-xl bg-cocoa px-3 text-white"
                 aria-label={`View cart, ${count} items`}
               >
-                <span className="text-[0.62rem] font-semibold opacity-75">{count} items</span>
+                <span className="text-xs font-semibold opacity-75">{count} items</span>
                 <span className="text-xs font-extrabold tabular-nums">{formatMoney(subtotal)}</span>
               </button>
             )}

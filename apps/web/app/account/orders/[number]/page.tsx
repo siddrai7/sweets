@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@sweets/api-client';
-import { RETURN_WINDOW_HOURS, type Order, type RefundMethod } from '@sweets/types';
+import { RETURN_WINDOW_HOURS } from '@sweets/types/constants';
+import type { Order, RefundMethod } from '@sweets/types';
 import {
   REASON_LABEL,
   ReportProblemSheet,
@@ -148,7 +149,7 @@ function OrderDetail() {
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-pista-500 text-white">
             <CheckIcon size={28} strokeWidth={2.5} />
           </span>
-          <p className="mt-5 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-saffron-400">
+          <p className="mt-5 text-xs font-bold uppercase tracking-[0.28em] text-saffron-400">
             Order confirmed
           </p>
           <h1 className="mt-2 text-[2.2rem] font-light leading-tight text-white sm:text-5xl">
@@ -301,9 +302,7 @@ function OrderDetail() {
             <dt>{payment?.status === 'SUCCEEDED' ? 'Paid' : 'To pay'}</dt>
             <dd className="tabular-nums">{formatMoney(order.total)}</dd>
           </div>
-          <p className="text-[0.7rem] text-cocoa-soft">
-            Includes {formatMoney(order.taxTotal)} GST.
-          </p>
+          <p className="text-xs text-cocoa-soft">Includes {formatMoney(order.taxTotal)} GST.</p>
         </dl>
       </section>
 

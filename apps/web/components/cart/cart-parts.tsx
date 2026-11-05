@@ -150,7 +150,7 @@ export function BillDetails({
           on this order
         </p>
       )}
-      <p className="text-[0.7rem] text-cocoa-soft">Prices are inclusive of all taxes (GST).</p>
+      <p className="text-xs text-cocoa-soft">Prices are inclusive of all taxes (GST).</p>
     </div>
   );
 }

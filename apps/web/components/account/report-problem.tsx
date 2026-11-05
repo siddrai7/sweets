@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { ApiError } from '@sweets/api-client';
-import { RETURN_REASONS, type Order, type ReturnReason } from '@sweets/types';
+import { RETURN_REASONS } from '@sweets/types/constants';
+import type { Order, ReturnReason } from '@sweets/types';
 import { ProductImage } from '@/components/product/product-image';
 import { MinusIcon, PlusIcon } from '@/components/ui/icons';
 import { Sheet } from '@/components/ui/sheet';

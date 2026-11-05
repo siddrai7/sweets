@@ -1,13 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ApiError } from '@sweets/api-client';
-import { SweetArt } from '@/components/art/sweet-art';
+import { ArtImage } from '@/components/art/art-image';
 import { LogoMark } from '@/components/layout/logo';
 import { CheckIcon } from '@/components/ui/icons';
-import { artFor } from '@/lib/art';
 import { useSession } from '@/lib/session';
 import { site } from '@/lib/site';
 
@@ -19,7 +18,6 @@ const PERKS = [
 
 function LoginForm() {
   const router = useRouter();
-  const next = useSearchParams().get('next') ?? '/';
   const { api, signIn } = useSession();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
@@ -36,7 +34,10 @@ function LoginForm() {
           ? await api.auth.login({ email: form.email, password: form.password })
           : await api.auth.register({ ...form, phone: form.phone || undefined });
       signIn(auth);
-      router.replace(next.startsWith('/') ? next : '/');
+      // Read at submit time (not via useSearchParams) so the form is in the server HTML and
+      // doesn't pop in after load. Only same-site paths are allowed.
+      const next = new URLSearchParams(window.location.search).get('next') ?? '/';
+      router.replace(next.startsWith('/') && !next.startsWith('//') ? next : '/');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong');
     } finally {
@@ -83,8 +84,8 @@ function LoginForm() {
               </li>
             ))}
           </ul>
-          <SweetArt
-            spec={artFor('motichoor-ladoo')}
+          <ArtImage
+            hints={['motichoor-ladoo']}
             background={false}
             className="pointer-events-none absolute -bottom-10 -right-10 h-72 w-72"
           />
@@ -155,9 +156,5 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
-  );
+  return <LoginForm />;
 }

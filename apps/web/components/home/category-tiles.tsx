@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { SweetArt } from '@/components/art/sweet-art';
+import { ArtImage } from '@/components/art/art-image';
 import { SectionHeading } from '@/components/ui/section-heading';
 import { artFor } from '@/lib/art';
 import type { CategoryNode } from '@/lib/categories';
@@ -44,14 +44,14 @@ export function CategoryTile({
         {c.imageUrl ? (
           <Image src={c.imageUrl} alt="" fill sizes="120px" className="object-cover" />
         ) : (
-          <SweetArt
-            spec={spec}
+          <ArtImage
+            hints={[c.slug, c.name]}
             background={false}
             className="absolute inset-0 h-full w-full scale-110 transition duration-500 group-hover:scale-[1.18]"
           />
         )}
       </span>
-      <span className="mt-2 line-clamp-2 text-[0.66rem] font-bold leading-tight sm:text-[0.82rem]">
+      <span className="mt-2 line-clamp-2 text-xs font-bold leading-tight sm:text-[0.82rem]">
         {c.name}
       </span>
     </Link>

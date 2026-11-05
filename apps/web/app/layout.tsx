@@ -14,7 +14,8 @@ const heading = Fraunces({
   variable: '--font-heading',
   display: 'swap',
   style: ['normal', 'italic'],
-  axes: ['SOFT', 'WONK', 'opsz'],
+  // Only the SOFT axis is used; WONK and opsz roughly double the font download.
+  axes: ['SOFT'],
 });
 const body = Manrope({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
@@ -28,14 +29,33 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: '#faf6ef' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // A local shop listing, so Google can show the shop with address and hours (e.g. on Maps).
   const organization = {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
+    '@type': ['Bakery', 'LocalBusiness'],
     name: site.name,
     url: site.url,
+    logo: `${site.url}/icons/512.png`,
+    image: `${site.url}/opengraph-image`,
     foundingDate: site.established,
     telephone: site.contact.phone,
     email: site.contact.email,
+    priceRange: '₹₹',
+    servesCuisine: 'Indian sweets',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: site.contact.street,
+      addressLocality: site.contact.city,
+      addressRegion: site.contact.state,
+      postalCode: site.contact.postalCode,
+      addressCountry: 'IN',
+    },
+    openingHoursSpecification: {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      opens: site.contact.opens,
+      closes: site.contact.closes,
+    },
     sameAs: Object.values(site.social),
   };
 

@@ -37,7 +37,14 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: product.metaTitle ?? `${product.name}: buy online`,
     description,
     alternates: { canonical: `/products/${product.slug}` },
-    openGraph: { title: product.name, description, images: product.images.slice(0, 1) },
+    // Real photos when there are some; otherwise the generated opengraph-image is used.
+    openGraph: {
+      title: product.name,
+      description,
+      images: product.images.length
+        ? product.images.slice(0, 1)
+        : [{ url: `/products/${product.slug}/opengraph-image`, width: 1200, height: 630 }],
+    },
   };
 }
 
@@ -119,7 +126,7 @@ export default async function ProductPage({ params }: { params: Params }) {
               images={product.images}
               badge={
                 product.tags.includes('bestseller') ? (
-                  <span className="rounded-full bg-white/90 px-3 py-1.5 text-[0.65rem] font-extrabold uppercase tracking-[0.18em] text-saffron-600 shadow-card backdrop-blur">
+                  <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-saffron-600 shadow-card backdrop-blur">
                     ★ Bestseller
                   </span>
                 ) : undefined

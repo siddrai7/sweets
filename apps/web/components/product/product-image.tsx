@@ -1,6 +1,5 @@
 import Image from 'next/image';
-import { SweetArt } from '@/components/art/sweet-art';
-import { artFor } from '@/lib/art';
+import { ArtImage } from '@/components/art/art-image';
 
 interface Props {
   name: string;
@@ -40,7 +39,11 @@ export function ProductImage({
 
   return (
     <div className={`relative overflow-hidden ${className}`} role="img" aria-label={name}>
-      <SweetArt spec={artFor(slug, name)} className="absolute inset-0 h-full w-full" />
+      <ArtImage
+        hints={[slug, name]}
+        priority={priority}
+        className="absolute inset-0 h-full w-full"
+      />
     </div>
   );
 }

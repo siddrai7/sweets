@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { createApiClient, type ApiClient } from '@sweets/api-client';
-import { ERP_ROLES, type AuthResponse, type AuthUser } from '@sweets/types';
+import { ERP_ROLES } from '@sweets/types/constants';
+import type { AuthResponse, AuthUser } from '@sweets/types';
 
 const STORAGE_KEY = 'sweets.erp.session';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';

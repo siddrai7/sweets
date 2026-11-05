@@ -38,25 +38,25 @@ export function ProductCard({ product, priority }: { product: Product; priority?
         />
         <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
           {off > 0 && (
-            <span className="rounded-md bg-pista-600 px-1.5 py-0.5 text-[0.65rem] font-extrabold uppercase tracking-wide text-white">
+            <span className="rounded-md bg-pista-600 px-1.5 py-0.5 text-xs font-extrabold uppercase tracking-wide text-white">
               {off}% off
             </span>
           )}
           {product.tags.includes('bestseller') && (
-            <span className="rounded-md bg-white/90 px-1.5 py-0.5 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-saffron-600 backdrop-blur">
+            <span className="rounded-md bg-white/90 px-1.5 py-0.5 text-xs font-bold uppercase tracking-[0.12em] text-saffron-600 backdrop-blur">
               Bestseller
             </span>
           )}
         </div>
         {soldOut && (
-          <span className="absolute inset-x-2 bottom-2 rounded-lg bg-cocoa/80 py-1.5 text-center text-[0.7rem] font-semibold text-white backdrop-blur">
+          <span className="absolute inset-x-2 bottom-2 rounded-lg bg-cocoa/80 py-1.5 text-center text-xs font-semibold text-white backdrop-blur">
             Sold out for today
           </span>
         )}
       </Link>
 
       <div className="flex flex-1 flex-col px-1 pb-0.5 pt-2.5 sm:px-1.5">
-        <div className="flex items-center gap-1.5 text-[0.68rem] font-semibold text-cocoa-soft">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-cocoa-soft">
           {product.isVeg && <VegMark size={11} />}
           <span className="truncate">{product.category?.name ?? 'Fresh today'}</span>
         </div>
@@ -91,11 +91,11 @@ export function ProductCard({ product, priority }: { product: Product; priority?
                   {formatMoney(variant.price)}
                 </p>
                 {off > 0 ? (
-                  <p className="mt-1 text-[0.7rem] text-cocoa-soft line-through tabular-nums">
+                  <p className="mt-1 text-xs text-cocoa-soft line-through tabular-nums">
                     {formatMoney(variant.mrp!)}
                   </p>
                 ) : lowStock ? (
-                  <p className="mt-1 text-[0.68rem] font-semibold text-brand-500">
+                  <p className="mt-1 text-xs font-semibold text-brand-500">
                     Only {variant.available} left
                   </p>
                 ) : null}

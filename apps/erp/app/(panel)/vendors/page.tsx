@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
-import { GSTIN_PATTERN, type Vendor } from '@sweets/types';
+import { GSTIN_PATTERN } from '@sweets/types/constants';
+import type { Vendor } from '@sweets/types';
 import {
   Badge,
   Button,

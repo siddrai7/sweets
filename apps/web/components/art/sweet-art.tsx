@@ -1,4 +1,3 @@
-import { useId } from 'react';
 import type { ArtSpec, ArtTone } from '@/lib/art';
 
 /**
@@ -11,14 +10,19 @@ export function SweetArt({
   background = true,
   fit = 'slice',
   className = '',
+  uid = 'a',
 }: {
   spec: ArtSpec;
   background?: boolean;
   /** `meet` keeps the whole still life visible in tall or wide frames. */
   fit?: 'slice' | 'meet';
   className?: string;
+  /**
+   * Prefix for gradient/pattern ids. Each drawing is now its own SVG file, so ids can't
+   * clash and a fixed prefix is fine. No hooks here, so it can be rendered to a string.
+   */
+  uid?: string;
 }) {
-  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const { kind, tone, garnish = 'none' } = spec;
   const ids = {
     bg: `${uid}bg`,
@@ -36,6 +40,7 @@ export function SweetArt({
 
   return (
     <svg
+      xmlns="http://www.w3.org/2000/svg"
       viewBox="12 24 176 176"
       preserveAspectRatio={`xMidYMid ${fit}`}
       className={className}

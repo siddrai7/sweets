@@ -67,9 +67,6 @@ export const orderQuerySchema = paginationQuerySchema.extend({
 });
 export type OrderQuery = z.infer<typeof orderQuerySchema>;
 
-/** Hours after delivery in which a customer can report a problem online. */
-export const RETURN_WINDOW_HOURS = 24;
-
 const returnItemsSchema = z
   .array(z.object({ orderItemId: z.string().min(1), quantity: z.number().int().min(1) }))
   .min(1, 'Choose at least one item');

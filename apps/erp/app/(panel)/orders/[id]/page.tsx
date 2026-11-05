@@ -5,15 +5,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { formatMoney } from '@sweets/api-client';
-import {
-  REFUND_METHODS,
-  RETURN_REASONS,
-  type Order,
-  type OrderStatus,
-  type RefundMethod,
-  type ReturnReason,
-  type ReturnRequest,
-} from '@sweets/types';
+import { REFUND_METHODS, RETURN_REASONS } from '@sweets/types/constants';
+import type { Order, OrderStatus, RefundMethod, ReturnReason, ReturnRequest } from '@sweets/types';
 import { Badge, Button, Card, Empty, Field, Modal, fmtDate, inputCls } from '@/components/ui';
 import { ReturnCard } from '@/components/return-card';
 import { useAuth } from '@/lib/auth';

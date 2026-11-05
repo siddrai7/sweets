@@ -34,7 +34,10 @@ export function Logo({ compact = false }: { compact?: boolean }) {
         >
           {site.name}
         </span>
-        <span className="mt-1 text-[0.55rem] font-bold uppercase tracking-[0.32em] text-saffron-600">
+        <span
+          aria-hidden
+          className="mt-1 text-[0.55rem] font-bold uppercase tracking-[0.32em] text-saffron-600"
+        >
           Est. {site.established} · Mithaiwala
         </span>
       </span>

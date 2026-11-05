@@ -31,7 +31,14 @@ export const site = {
     email: 'hello@example.com',
     whatsapp: '919876543210',
     address: 'Shop No. 1, Main Road, Thane West, Maharashtra 400601',
+    /** Structured parts of the address and hours, for Google's business listing. */
+    street: 'Shop No. 1, Main Road, Thane West',
+    city: 'Thane',
+    state: 'Maharashtra',
+    postalCode: '400601',
     hours: 'Open daily, 8:30 am – 10:00 pm',
+    opens: '08:30',
+    closes: '22:00',
   },
   social: {
     instagram: 'https://instagram.com/',

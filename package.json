@@ -14,11 +14,13 @@
     "db:generate": "turbo run generate",
     "db:migrate": "pnpm --filter @sweets/api db:migrate",
     "db:seed": "pnpm --filter @sweets/api db:seed",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run"
   },
   "devDependencies": {
     "prettier": "^3.6.2",
     "turbo": "^2.11.7",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
   }
 }

@@ -51,7 +51,7 @@ export function OrderTracker({
             className={`block rounded-full ${size === 'lg' ? 'h-2' : 'h-1.5'} ${i <= current ? 'bg-pista-500' : 'bg-brand-100'}`}
           />
           <span
-            className={`mt-1.5 block font-semibold ${size === 'lg' ? 'text-xs' : 'text-[0.68rem]'} ${i <= current ? 'text-cocoa' : 'text-cocoa-soft/70'}`}
+            className={`mt-1.5 block font-semibold ${size === 'lg' ? 'text-xs' : 'text-xs'} ${i <= current ? 'text-cocoa' : 'text-cocoa-soft/70'}`}
           >
             {s.label}
           </span>

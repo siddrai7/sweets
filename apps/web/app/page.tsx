@@ -10,6 +10,8 @@ import { buildCategoryTree } from '@/lib/categories';
 
 export const revalidate = 60;
 
+export const metadata = { alternates: { canonical: '/' } };
+
 const collection = (tag: string) =>
   safe(serverApi.catalog.products({ tag, pageSize: 12 }, CATALOG_REVALIDATE), null).then(
     (r) => r?.items ?? [],

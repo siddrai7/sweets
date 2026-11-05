@@ -78,7 +78,7 @@ export default function CartPage() {
         >
           <span className="flex flex-col leading-tight">
             <span className="font-extrabold tabular-nums">{formatMoney(total)}</span>
-            <span className="text-[0.7rem] font-semibold opacity-75">
+            <span className="text-xs font-semibold opacity-75">
               {count} item{count > 1 ? 's' : ''} · total
             </span>
           </span>

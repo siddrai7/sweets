@@ -52,13 +52,13 @@ export async function Footer() {
 
       <div className="container-page grid gap-12 py-14 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:gap-10">
         <div>
-          <Link href="/" className="inline-flex items-center gap-3">
+          <Link href="/" prefetch={false} className="inline-flex items-center gap-3">
             <LogoMark size={44} className="text-brand-600" />
             <span>
               <span className="block font-display text-2xl font-medium text-white">
                 {site.name}
               </span>
-              <span className="text-[0.6rem] font-bold uppercase tracking-[0.32em] text-saffron-400">
+              <span className="text-xs font-bold uppercase tracking-[0.32em] text-saffron-400">
                 Est. {site.established}
               </span>
             </span>
@@ -97,7 +97,7 @@ export async function Footer() {
         />
 
         <div>
-          <h3 className="font-sans text-[0.7rem] font-bold uppercase tracking-[0.25em] text-saffron-400">
+          <h3 className="font-sans text-xs font-bold uppercase tracking-[0.25em] text-saffron-400">
             Visit the shop
           </h3>
           <ul className="mt-5 space-y-3.5 text-sm">
@@ -112,7 +112,7 @@ export async function Footer() {
             <li>
               <a
                 href={`tel:${site.contact.phone.replace(/\s/g, '')}`}
-                className="flex gap-3 transition hover:text-white"
+                className="flex min-h-11 items-center gap-3 transition hover:text-white"
               >
                 <PhoneIcon size={18} className="shrink-0 text-brand-400" /> {site.contact.phone}
               </a>
@@ -120,7 +120,7 @@ export async function Footer() {
             <li>
               <a
                 href={`mailto:${site.contact.email}`}
-                className="flex gap-3 transition hover:text-white"
+                className="flex min-h-11 items-center gap-3 transition hover:text-white"
               >
                 <MailIcon size={18} className="shrink-0 text-brand-400" /> {site.contact.email}
               </a>
@@ -179,13 +179,13 @@ function FooterLinks({
 }) {
   return (
     <div>
-      <h3 className="font-sans text-[0.7rem] font-bold uppercase tracking-[0.25em] text-saffron-400">
+      <h3 className="font-sans text-xs font-bold uppercase tracking-[0.25em] text-saffron-400">
         {title}
       </h3>
       <ul className="mt-5 space-y-3 text-sm">
         {links.map((l) => (
           <li key={l.href}>
-            <Link href={l.href} className="transition hover:text-white">
+            <Link href={l.href} prefetch={false} className="transition hover:text-white">
               {l.label}
             </Link>
           </li>

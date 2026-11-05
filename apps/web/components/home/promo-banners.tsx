@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { SweetArt } from '@/components/art/sweet-art';
+import { ArtImage } from '@/components/art/art-image';
 import { ArrowRight } from '@/components/ui/icons';
 import { banners, type Banner } from '@/content/home';
-import { artFor } from '@/lib/art';
 
 const TONES: Record<Banner['tone'], { card: string; eyebrow: string; body: string; cta: string }> =
   {
@@ -39,9 +38,7 @@ export function PromoBanners() {
                 className={`group relative flex h-full min-h-52 overflow-hidden rounded-[1.6rem] p-5 sm:p-6 ${t.card}`}
               >
                 <div className="relative z-10 flex max-w-[60%] flex-col">
-                  <p
-                    className={`text-[0.65rem] font-bold uppercase tracking-[0.24em] ${t.eyebrow}`}
-                  >
+                  <p className={`text-xs font-bold uppercase tracking-[0.24em] ${t.eyebrow}`}>
                     {b.eyebrow}
                   </p>
                   <h3 className="mt-2 text-[1.45rem] font-normal leading-[1.1] sm:text-2xl">
@@ -54,8 +51,8 @@ export function PromoBanners() {
                     {b.cta.label} <ArrowRight size={14} />
                   </span>
                 </div>
-                <SweetArt
-                  spec={artFor(b.art)}
+                <ArtImage
+                  hints={[b.art]}
                   background={false}
                   className="absolute -bottom-6 -right-10 h-52 w-52 transition duration-700 group-hover:-rotate-3 group-hover:scale-105 sm:h-56 sm:w-56"
                 />
