@@ -52,3 +52,19 @@ pnpm dev
 | `pnpm db:migrate`                     | Creates/applies a migration after editing `schema.prisma` |
 | `pnpm db:seed`                        | Re-seeds sample data (idempotent)                         |
 | `pnpm --filter @sweets/api db:studio` | Opens Prisma Studio to browse the DB                      |
+
+## Deploying (Coolify)
+
+The three apps run on a Hostinger VPS under [Coolify](https://coolify.io) as three resources from this one repo. Each has its own Dockerfile and builds from the repo root, so every resource uses base directory `/`.
+
+| Resource | Dockerfile location    | Port | Watch paths                  | Build variables                                                        |
+| -------- | ---------------------- | ---- | ---------------------------- | ---------------------------------------------------------------------- |
+| API      | `/apps/api/Dockerfile` | 4000 | `apps/api/**`, `packages/**` | none                                                                   |
+| Web      | `/apps/web/Dockerfile` | 3000 | `apps/web/**`, `packages/**` | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SITE_NAME` |
+| ERP      | `/apps/erp/Dockerfile` | 3001 | `apps/erp/**`, `packages/**` | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STOREFRONT_URL`                    |
+
+- `NEXT_PUBLIC_*` values are baked in at build time, so changing one needs a redeploy.
+- **API:** the container runs `prisma migrate deploy` before it starts. With Neon, set `DATABASE_URL` to the pooled URL and `DIRECT_URL` to the same URL without `-pooler`, because migrations need a direct connection. Health check path is `/api/v1/health`.
+- **Web:** set `API_URL` (runtime) to the API's public URL, or to an internal one to skip the round trip through the proxy. Set the same `REVALIDATE_SECRET` on the API and the web app, and point the API's `STOREFRONT_REVALIDATE_URL` at `https://<shop domain>/api/revalidate`.
+- Deploy the API first. The web build prerenders catalog pages from it, and without it they start empty and fill in within a minute.
+- `REDIS_URL` is optional and unused for now, so no Redis is needed yet.
