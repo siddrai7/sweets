@@ -2,8 +2,7 @@
   "extends": "@sweets/tsconfig/nest.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "baseUrl": "."
+    "rootDir": "src"
   },
   "include": ["src"]
 }
