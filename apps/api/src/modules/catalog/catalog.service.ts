@@ -78,20 +78,56 @@ export class CatalogService {
       }),
       ...(search && { id: { in: search.ids } }),
     };
-    const [items, total] = await Promise.all([
-      this.prisma.product.findMany({
-        where,
-        include: productInclude,
-        orderBy: SORTS[q.sort],
-        ...pageArgs(q),
-      }),
-      this.prisma.product.count({ where }),
-    ]);
+    const [items, total] =
+      q.sort === 'featured' && !q.includeInactive
+        ? await this.pageInStockFirst(where, q)
+        : await Promise.all([
+            this.prisma.product.findMany({
+              where,
+              include: productInclude,
+              orderBy: SORTS[q.sort],
+              ...pageArgs(q),
+            }),
+            this.prisma.product.count({ where }),
+          ]);
     if (search && q.log && q.page === 1) await this.logSearch(search.term, total);
     return {
       ...paginated(await this.withAvailability(items, !q.includeInactive), total, q),
       suggestion: search?.suggestion ?? null,
     };
+  }
+
+  /**
+   * The storefront's default ("Recommended") order: featured first, but anything sold out for
+   * today goes to the end, so a shopper never opens the shop to a row of unavailable sweets.
+   * Stock lives in batches rather than a column, so the matching ids are ranked in memory
+   * and only the requested page is loaded in full.
+   */
+  private async pageInStockFirst(
+    where: Prisma.ProductWhereInput,
+    q: ProductQuery,
+  ): Promise<[ProductWithVariants[], number]> {
+    const ranked = await this.prisma.product.findMany({
+      where,
+      orderBy: SORTS.featured,
+      select: { id: true, variants: { where: { isActive: true }, select: { id: true } } },
+    });
+    const available = await this.inventory.availableByVariant(
+      ranked.flatMap((p) => p.variants.map((v) => v.id)),
+    );
+    const inStock = (p: (typeof ranked)[number]) =>
+      p.variants.some((v) => (available.get(v.id) ?? 0) > 0);
+    const { skip, take } = pageArgs(q);
+    const ids = [...ranked.filter(inStock), ...ranked.filter((p) => !inStock(p))]
+      .slice(skip, skip + take)
+      .map((p) => p.id);
+    const rows = await this.prisma.product.findMany({
+      where: { id: { in: ids } },
+      include: productInclude,
+    });
+    const order = new Map(ids.map((id, i) => [id, i]));
+    rows.sort((x, y) => order.get(x.id)! - order.get(y.id)!);
+    return [rows, ranked.length];
   }
 
   /**
