@@ -2,17 +2,16 @@ import Link from 'next/link';
 import { ArtImage } from '@/components/art/art-image';
 import { promises } from '@/content/home';
 import { ArrowRight, DropIcon, HandIcon, LeafIcon, SunIcon } from '@/components/ui/icons';
-import { site } from '@/lib/site';
 
 const ICONS = { sun: SunIcon, drop: DropIcon, leaf: LeafIcon, hand: HandIcon };
 
-/** Dark heritage band: why the sweets are different. */
+/** Dark band: why the sweets are different. */
 export function Promises({ showLink = true }: { showLink?: boolean }) {
   return (
     <section className="my-10 sm:my-16">
       <div className="container-page">
-        <div className="relative overflow-hidden rounded-[2rem] bg-brand-900 px-6 py-12 text-brand-100 sm:px-12 sm:py-16 lg:px-16">
-          <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-600/40 blur-3xl" />
+        <div className="relative overflow-hidden rounded-[2rem] bg-brand-800 px-6 py-12 text-brand-100 sm:px-12 sm:py-16 lg:px-16">
+          <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-500/40 blur-3xl" />
           <ArtImage
             hints={['besan-ladoo']}
             background={false}
@@ -21,14 +20,14 @@ export function Promises({ showLink = true }: { showLink?: boolean }) {
           <div className="relative grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:gap-16">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-saffron-400">
-                Since {site.established}
+                Our promise
               </p>
               <h2 className="mt-4 text-[2.1rem] font-light leading-[1.05] text-white sm:text-5xl">
-                The taste of tradition, <em className="text-saffron-300">made honestly.</em>
+                Made the slow way, <em className="text-saffron-300">made honestly.</em>
               </h2>
               <p className="mt-5 max-w-md leading-relaxed text-brand-300">
-                For over three decades we have made our sweets the way they were meant to be made:
-                by hand, in small batches, every single morning.
+                We are a new kitchen with an old-fashioned rule: make it by hand, in small batches,
+                and sell it fresh.
               </p>
               {showLink && (
                 <Link
@@ -40,7 +39,7 @@ export function Promises({ showLink = true }: { showLink?: boolean }) {
                 </Link>
               )}
             </div>
-            <ul className="grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:pr-40">
+            <ul className="grid grid-cols-2 gap-x-5 gap-y-7 sm:gap-x-8 sm:gap-y-8 lg:pr-40">
               {promises.map((p, i) => {
                 const Icon = ICONS[p.icon];
                 return (
@@ -51,7 +50,7 @@ export function Promises({ showLink = true }: { showLink?: boolean }) {
                       </span>
                       <span className="font-display text-sm italic text-brand-400">0{i + 1}</span>
                     </div>
-                    <h3 className="mt-4 text-xl text-white">{p.title}</h3>
+                    <h3 className="mt-4 text-lg text-white sm:text-xl">{p.title}</h3>
                     <p className="mt-1.5 text-sm leading-relaxed text-brand-300">{p.body}</p>
                   </li>
                 );

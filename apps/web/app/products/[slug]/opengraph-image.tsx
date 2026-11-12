@@ -37,7 +37,7 @@ export default async function ProductOgImage({ params }: { params: Promise<{ slu
           {name}
         </div>
         {from && (
-          <div style={{ fontSize: 40, marginTop: 24, color: '#7d1b28', fontWeight: 700 }}>
+          <div style={{ fontSize: 40, marginTop: 24, color: '#861424', fontWeight: 700 }}>
             {from}
           </div>
         )}

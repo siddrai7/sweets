@@ -1,17 +1,33 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { InboxIcon } from './icons';
 
-export function PageHeader({ title, actions }: { title: string; actions?: ReactNode }) {
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string;
+  subtitle?: ReactNode;
+  actions?: ReactNode;
+}) {
   return (
-    <div className="mb-6 flex items-center justify-between gap-4">
-      <h1 className="text-2xl font-semibold">{title}</h1>
-      {actions}
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="min-w-0">
+        <h1 className="text-[1.9rem] font-medium leading-tight text-brand-900 sm:text-[2.2rem]">
+          {title}
+        </h1>
+        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-slate-200 bg-white p-5 ${className}`}>{children}</div>
+    <div className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-card ${className}`}>
+      {children}
+    </div>
   );
 }
 
@@ -21,14 +37,15 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' }) {
   const styles = {
-    primary: 'bg-brand-600 text-white hover:bg-brand-700',
-    secondary: 'border border-slate-300 bg-white hover:bg-slate-50',
+    primary: 'bg-brand-600 text-white shadow-sm hover:bg-brand-700',
+    secondary:
+      'border border-slate-300 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50',
     danger: 'border border-red-200 bg-white text-red-700 hover:bg-red-50',
   }[variant];
   return (
     <button
       {...props}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50 ${styles} ${className}`}
+      className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}
     />
   );
 }
@@ -41,14 +58,18 @@ export function Badge({
   tone?: 'slate' | 'green' | 'amber' | 'red' | 'blue';
 }) {
   const tones = {
-    slate: 'bg-slate-100 text-slate-700',
-    green: 'bg-green-100 text-green-800',
-    amber: 'bg-amber-100 text-amber-800',
-    red: 'bg-red-100 text-red-800',
-    blue: 'bg-blue-100 text-blue-800',
-  };
+    slate: ['bg-slate-100 text-slate-700 ring-slate-200', 'bg-slate-400'],
+    green: ['bg-green-50 text-green-800 ring-green-200', 'bg-green-600'],
+    amber: ['bg-amber-50 text-amber-800 ring-amber-200', 'bg-amber-500'],
+    red: ['bg-red-50 text-red-800 ring-red-200', 'bg-red-600'],
+    blue: ['bg-blue-50 text-blue-800 ring-blue-200', 'bg-blue-600'],
+  } as const;
+  const [pill, dot] = tones[tone];
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${pill}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {children}
     </span>
   );
@@ -56,18 +77,20 @@ export function Badge({
 
 export function Table({ head, children }: { head: string[]; children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+        <thead className="border-b border-slate-200 bg-slate-50 text-[0.68rem] uppercase tracking-[0.12em] text-slate-500">
           <tr>
             {head.map((h) => (
-              <th key={h} className="px-4 py-3 font-medium">
+              <th key={h} className="whitespace-nowrap px-4 py-3 font-bold">
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">{children}</tbody>
+        <tbody className="divide-y divide-slate-100 [&>tr]:transition-colors [&>tr:hover]:bg-saffron-50/60">
+          {children}
+        </tbody>
       </table>
     </div>
   );
@@ -78,7 +101,14 @@ export function Td({ children, className = '' }: { children?: ReactNode; classNa
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-10 text-center text-sm text-slate-500">{children}</p>;
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-12 text-center text-sm text-slate-500">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-saffron-100 text-saffron-600">
+        <InboxIcon size={22} />
+      </span>
+      <p>{children}</p>
+    </div>
+  );
 }
 
 export function fmtDate(iso: string | null | undefined) {
@@ -132,17 +162,17 @@ export function Modal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 pt-[10vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-900/45 p-4 pt-[10vh] backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
-      <div className={`w-full ${width} rounded-xl bg-white shadow-xl`}>
+      <div className={`w-full ${width} animate-rise rounded-2xl bg-white shadow-float`}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold">{title}</h2>
+            <h2 className="font-display text-xl text-brand-900">{title}</h2>
             {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
           </div>
           <button
@@ -156,7 +186,7 @@ export function Modal({
         </div>
         <div className="px-6 py-5">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 rounded-b-xl border-t border-slate-100 bg-slate-50 px-6 py-3">
+          <div className="flex justify-end gap-2 rounded-b-2xl border-t border-slate-100 bg-slate-50 px-6 py-3">
             {footer}
           </div>
         )}
@@ -182,9 +212,9 @@ export function Tabs<T extends string>({
           role="tab"
           aria-selected={t.value === value}
           onClick={() => onChange(t.value)}
-          className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition ${
+          className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition ${
             t.value === value
-              ? 'border-brand-600 text-brand-700'
+              ? 'border-saffron-500 text-brand-700'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >

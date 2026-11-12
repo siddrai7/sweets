@@ -23,7 +23,10 @@ const body = Manrope({ subsets: ['latin'], variable: '--font-body', display: 'sw
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: { default: `${site.name} | Fresh Indian Sweets Online`, template: `%s | ${site.name}` },
+  title: {
+    default: `${site.name} | Fresh Indian Sweets & Snacks Online`,
+    template: `%s | ${site.name}`,
+  },
   description: site.description,
   openGraph: { type: 'website', siteName: site.name, locale: 'en_IN' },
 };
@@ -37,9 +40,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     '@type': ['Bakery', 'LocalBusiness'],
     name: site.name,
     url: site.url,
-    logo: `${site.url}/icons/512.png`,
+    logo: `${site.url}/logo.png`,
     image: `${site.url}/opengraph-image`,
-    foundingDate: site.established,
     telephone: site.contact.phone,
     email: site.contact.email,
     priceRange: '₹₹',

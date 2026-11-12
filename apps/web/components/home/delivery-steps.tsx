@@ -5,8 +5,8 @@ import { site } from '@/lib/site';
 const STEPS = [
   {
     icon: SunIcon,
-    title: 'Made at dawn',
-    body: 'Our karigars start at 5 am, so your sweets are hours old, not days.',
+    title: 'Made fresh',
+    body: 'Cooked in small batches, so your sweets are hours old, not days.',
   },
   {
     icon: GiftIcon,
@@ -15,8 +15,8 @@ const STEPS = [
   },
   {
     icon: TruckIcon,
-    title: `At your door in ${site.delivery.eta}`,
-    body: `Same-day delivery across ${site.delivery.area}.`,
+    title: 'At your door the same day',
+    body: `Order before ${site.delivery.sameDayCutoff}. We deliver across ${site.delivery.area}.`,
   },
 ];
 
@@ -29,7 +29,7 @@ export function DeliverySteps() {
             <BoltIcon size={14} /> Fresh to your door
           </p>
           <h2 className="mt-3 text-[2rem] font-light leading-[1.05] sm:text-[2.75rem]">
-            From our kadhai to your table, <em className="text-brand-600">the same day.</em>
+            From our kitchen to your table, <em className="text-brand-600">the same day.</em>
           </h2>
           <p className="mt-4 text-cocoa-soft">
             Order before {site.delivery.sameDayCutoff} for same-day delivery. Free on orders above ₹
@@ -39,17 +39,22 @@ export function DeliverySteps() {
             Start your order
           </Link>
         </div>
-        <ol className="grid gap-4 sm:grid-cols-3">
+        <ol className="grid gap-3 sm:grid-cols-3 sm:gap-4">
           {STEPS.map(({ icon: Icon, title, body }, i) => (
-            <li key={title} className="relative rounded-[1.4rem] bg-white p-5 shadow-card">
-              <span className="font-display text-5xl font-light italic text-saffron-300">
+            <li
+              key={title}
+              className="relative flex items-start gap-4 rounded-[1.4rem] bg-white p-4 shadow-card sm:block sm:p-5"
+            >
+              <span className="w-7 shrink-0 font-display text-4xl font-light italic leading-none text-saffron-400 sm:w-auto sm:text-5xl">
                 {i + 1}
               </span>
-              <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+              <span className="absolute right-5 top-5 hidden h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600 sm:flex">
                 <Icon size={20} />
               </span>
-              <h3 className="mt-3 font-sans text-base font-bold">{title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-cocoa-soft">{body}</p>
+              <div>
+                <h3 className="font-sans text-base font-bold sm:mt-3">{title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-cocoa-soft sm:mt-1.5">{body}</p>
+              </div>
             </li>
           ))}
         </ol>

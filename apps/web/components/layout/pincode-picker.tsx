@@ -7,7 +7,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { usePincode } from '@/lib/pincode';
 import { site } from '@/lib/site';
 
-/** "Delivery in 60–90 min · 400610 Thane ▾" — opens a sheet to check another pincode. */
+/** "Delivery in 60–90 min · 413102 Baramati ▾" — opens a sheet to check another pincode. */
 export function DeliveryBadge({ className = '' }: { className?: string }) {
   const { current } = usePincode();
   const [open, setOpen] = useState(false);

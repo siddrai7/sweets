@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { formatMoney } from '@/lib/money';
 import { BillDetails, CartLineItem, FreeDeliveryMeter } from '@/components/cart/cart-parts';
+import { PopularShelf } from '@/components/product/popular-shelf';
 import { BagIcon, ChevronRight, LockIcon } from '@/components/ui/icons';
 import { useCart } from '@/lib/cart';
 import { deliveryFeeFor } from '@/lib/pricing';
@@ -15,16 +16,19 @@ export default function CartPage() {
 
   if (!lines.length) {
     return (
-      <div className="container-page flex flex-col items-center py-24 text-center">
-        <span className="flex h-24 w-24 items-center justify-center rounded-full bg-brand-100 text-brand-600">
-          <BagIcon size={40} />
-        </span>
-        <h1 className="mt-6 text-4xl font-medium">Your cart is empty</h1>
-        <p className="mt-3 text-cocoa-soft">Looks like you haven&apos;t added any sweets yet.</p>
-        <Link href="/shop" className="btn-primary mt-8">
-          Browse sweets
-        </Link>
-      </div>
+      <>
+        <div className="container-page flex flex-col items-center pb-6 pt-12 text-center sm:pt-16">
+          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-100 text-brand-600">
+            <BagIcon size={34} />
+          </span>
+          <h1 className="mt-5 text-3xl font-medium sm:text-4xl">Your cart is empty</h1>
+          <p className="mt-2 text-cocoa-soft">Nothing in here yet. These are a good first pick.</p>
+          <Link href="/shop" className="btn-primary mt-6">
+            Browse the menu
+          </Link>
+        </div>
+        <PopularShelf />
+      </>
     );
   }
 

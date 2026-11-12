@@ -170,9 +170,9 @@ export function ProductPurchase({ product }: { product: Product }) {
             <StoreIcon size={20} />
           </span>
           <div className="text-sm">
-            <p className="font-bold">Free store pickup</p>
+            <p className="font-bold">Free pickup</p>
             <p className="text-cocoa-soft">
-              Ready in {site.delivery.pickupReady} at our Thane shop.
+              Ready in {site.delivery.pickupReady} at our {site.contact.city} kitchen.
             </p>
           </div>
         </div>

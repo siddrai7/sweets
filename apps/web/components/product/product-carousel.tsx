@@ -12,10 +12,19 @@ interface Props {
   subtitle?: string;
   products: Product[];
   viewAllHref?: string;
+  /** Set false on a shelf whose title already says what the badge would. */
+  badges?: boolean;
 }
 
 /** Horizontally scrolling shelf: swipe on mobile, arrow buttons on desktop. */
-export function ProductCarousel({ title, eyebrow, subtitle, products, viewAllHref }: Props) {
+export function ProductCarousel({
+  title,
+  eyebrow,
+  subtitle,
+  products,
+  viewAllHref,
+  badges = true,
+}: Props) {
   const track = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: true, end: false });
 
@@ -53,7 +62,7 @@ export function ProductCarousel({ title, eyebrow, subtitle, products, viewAllHre
               key={p.id}
               className="w-[44%] shrink-0 snap-start sm:w-[31%] md:w-[23.5%] lg:w-[calc(20%-0.8rem)]"
             >
-              <ProductCard product={p} priority={i < 2} />
+              <ProductCard product={p} priority={i < 2} badge={badges} />
             </div>
           ))}
         </div>

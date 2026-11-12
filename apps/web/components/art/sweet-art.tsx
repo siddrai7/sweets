@@ -48,7 +48,8 @@ export function SweetArt({
     >
       <defs>
         <radialGradient id={ids.bg} cx="50%" cy="38%" r="80%">
-          <stop offset="0%" stopColor="#fff" stopOpacity="0.85" />
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.55" />
+          <stop offset="70%" stopColor={tone.bg} />
           <stop offset="100%" stopColor={tone.bg} />
         </radialGradient>
         <radialGradient id={ids.ball} cx="36%" cy="30%" r="78%">
@@ -119,7 +120,7 @@ export function SweetArt({
       ) : (
         <>
           {/* Plate */}
-          <ellipse cx="100" cy="162" rx="84" ry="14" fill="#2d0a10" fillOpacity="0.08" />
+          <ellipse cx="100" cy="162" rx="84" ry="14" fill="#3d020b" fillOpacity="0.1" />
           <ellipse cx="100" cy="134" rx="84" ry="28" fill="#e9dfcf" />
           <ellipse cx="100" cy="131" rx="84" ry="28" fill={url(ids.plate)} />
           <ellipse
@@ -532,7 +533,7 @@ function Bowl({ kind, tone, garnish, url, ids, brass }: PartProps & { brass: boo
 
   return (
     <g>
-      <ellipse cx="100" cy="166" rx="66" ry="10" fill="#2d0a10" fillOpacity="0.1" />
+      <ellipse cx="100" cy="166" rx="66" ry="10" fill="#3d020b" fillOpacity="0.12" />
       <ellipse cx="100" cy="104" rx="72" ry="22" fill={brass ? '#8f6420' : '#ddd3c3'} />
       <ellipse
         cx="100"

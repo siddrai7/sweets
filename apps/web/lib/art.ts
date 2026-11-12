@@ -24,7 +24,7 @@ export interface ArtTone {
   body: string;
   light: string;
   dark: string;
-  /** Backdrop tint. */
+  /** Backdrop tint. Chosen to contrast with the sweet, so a pale katli isn't lost on cream. */
   bg: string;
   /** Syrup / milk colour for bowl sweets. */
   liquid?: string;
@@ -38,35 +38,35 @@ export interface ArtSpec {
 }
 
 const TONES = {
-  motichoor: { body: '#e98f2c', light: '#f8c463', dark: '#b4561a', bg: '#fbe8cf' },
-  besan: { body: '#dba54b', light: '#f1cd81', dark: '#a26f25', bg: '#f7ecda' },
-  dryfruit: { body: '#7c4b2f', light: '#a8734c', dark: '#4e2b19', bg: '#f1e4d8' },
-  cashew: { body: '#efdfc2', light: '#fbf3e3', dark: '#c6a97f', bg: '#f2ebe0' },
-  pista: { body: '#bccb91', light: '#dee7bb', dark: '#7e9257', bg: '#e8efdc' },
-  kesar: { body: '#f2c66d', light: '#fbe3a6', dark: '#c88f2e', bg: '#fbefd6' },
-  coconut: { body: '#f7f2e8', light: '#ffffff', dark: '#d5c9b3', bg: '#ecefe8' },
-  caramel: { body: '#c98a4b', light: '#e7b47c', dark: '#8f5524', bg: '#f5e6d4' },
+  motichoor: { body: '#e98f2c', light: '#f8c463', dark: '#b4561a', bg: '#f6d3a2' },
+  besan: { body: '#dba54b', light: '#f1cd81', dark: '#a26f25', bg: '#efd9a6' },
+  dryfruit: { body: '#7c4b2f', light: '#a8734c', dark: '#4e2b19', bg: '#e9cdb6' },
+  cashew: { body: '#efdfc2', light: '#fbf3e3', dark: '#c6a97f', bg: '#e7c4bd' },
+  pista: { body: '#bccb91', light: '#dee7bb', dark: '#7e9257', bg: '#f0d3c8' },
+  kesar: { body: '#f2c66d', light: '#fbe3a6', dark: '#c88f2e', bg: '#d7e4c4' },
+  coconut: { body: '#f7f2e8', light: '#ffffff', dark: '#d5c9b3', bg: '#c9dfd8' },
+  caramel: { body: '#c98a4b', light: '#e7b47c', dark: '#8f5524', bg: '#efd6ae' },
   rasgulla: {
     body: '#fbf6ea',
     light: '#ffffff',
     dark: '#d9cdb5',
-    bg: '#e9eff0',
+    bg: '#c8dde6',
     liquid: '#f3e8c6',
   },
   rasmalai: {
     body: '#fbf0da',
     light: '#ffffff',
     dark: '#e0c79a',
-    bg: '#fbeedb',
+    bg: '#f4d793',
     liquid: '#f5d995',
   },
-  halwa: { body: '#d98b2b', light: '#f0b556', dark: '#9e5a16', bg: '#fbe7cf' },
-  namkeen: { body: '#d9a033', light: '#f2c861', dark: '#9c6a16', bg: '#faefd5' },
-  dhokla: { body: '#f2cf4a', light: '#fbe78c', dark: '#c89e1e', bg: '#f8f3d3' },
-  kachori: { body: '#c98a3e', light: '#e8b56f', dark: '#8c5a20', bg: '#f5e8d6' },
-  cookie: { body: '#e2b877', light: '#f4d8a5', dark: '#b0814a', bg: '#f5ece0' },
-  fig: { body: '#8a4e3a', light: '#ba7b60', dark: '#5a2c1f', bg: '#f2e3dc' },
-  wine: { body: '#c0563f', light: '#e58c6a', dark: '#7d1b28', bg: '#f6e5dc' },
+  halwa: { body: '#d98b2b', light: '#f0b556', dark: '#9e5a16', bg: '#f1cfa6' },
+  namkeen: { body: '#d9a033', light: '#f2c861', dark: '#9c6a16', bg: '#d6e3c1' },
+  dhokla: { body: '#f2cf4a', light: '#fbe78c', dark: '#c89e1e', bg: '#cfe2c0' },
+  kachori: { body: '#c98a3e', light: '#e8b56f', dark: '#8c5a20', bg: '#f0d3b0' },
+  cookie: { body: '#e2b877', light: '#f4d8a5', dark: '#b0814a', bg: '#ecd0bb' },
+  fig: { body: '#8a4e3a', light: '#ba7b60', dark: '#5a2c1f', bg: '#e9cfca' },
+  wine: { body: '#c0563f', light: '#e58c6a', dark: '#7d1b28', bg: '#f0d2c7' },
 } satisfies Record<string, ArtTone>;
 
 /** First match wins. Order matters: specific names before generic ones. */

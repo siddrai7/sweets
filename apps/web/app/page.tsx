@@ -1,9 +1,9 @@
+import type { Product } from '@sweets/types';
 import { CategoryTiles } from '@/components/home/category-tiles';
 import { DeliverySteps } from '@/components/home/delivery-steps';
 import { Hero } from '@/components/home/hero';
 import { PromoBanners } from '@/components/home/promo-banners';
 import { Promises } from '@/components/home/promises';
-import { Testimonials } from '@/components/home/testimonials';
 import { ProductCarousel } from '@/components/product/product-carousel';
 import { RecentlyViewed } from '@/components/product/recently-viewed';
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
@@ -13,52 +13,52 @@ export const revalidate = 60;
 
 export const metadata = { alternates: { canonical: '/' } };
 
-const collection = (tag: string) =>
-  safe(serverApi.catalog.products({ tag, pageSize: 12 }, CATALOG_REVALIDATE), null).then(
+const shelf = (query: { tag?: string; category?: string }) =>
+  safe(serverApi.catalog.products({ ...query, pageSize: 12 }, CATALOG_REVALIDATE), null).then(
     (r) => r?.items ?? [],
   );
 
+/** Savoury categories for the second shelf. Slugs that don't exist simply return nothing. */
+const SAVOURY = ['namkeen', 'snacks'];
+
 export default async function HomePage() {
-  const [categories, bestsellers, favourites, classics] = await Promise.all([
+  const [categories, bestsellers, ...savouryGroups] = await Promise.all([
     safe(serverApi.catalog.categories(CATALOG_REVALIDATE), []),
-    collection('bestseller'),
-    collection('favourite'),
-    collection('classic'),
+    shelf({ tag: 'bestseller' }),
+    ...SAVOURY.map((category) => shelf({ category })),
   ]);
+  // The API already lists what can be bought today first; keep that order across the groups.
+  const savoury = savouryGroups.flat().sort((a, b) => Number(soldOut(a)) - Number(soldOut(b)));
 
   return (
     <>
       <Hero />
       <CategoryTiles categories={buildCategoryTree(categories)} />
-      <PromoBanners />
-      <RecentlyViewed />
       <ProductCarousel
         eyebrow="Most loved"
         title="Bestsellers"
-        subtitle="The sweets our customers come back for, again and again."
+        subtitle="What people order first, and then order again."
         products={bestsellers}
         viewAllHref="/shop?tag=bestseller"
+        badges={false}
       />
+      <PromoBanners />
       <ProductCarousel
-        eyebrow="House favourites"
+        eyebrow="Tea-time"
         title={
           <>
-            All-time <em className="text-brand-600">favourites</em>
+            Snacks &amp; <em className="text-brand-600">namkeen</em>
           </>
         }
-        products={favourites}
-        viewAllHref="/shop?tag=favourite"
+        subtitle="Crisp, savoury and made for the 4 pm chai."
+        products={savoury}
+        viewAllHref="/shop/namkeen"
       />
       <Promises />
-      <ProductCarousel
-        eyebrow="Unchanged since day one"
-        title="The classics"
-        subtitle="Timeless recipes, exactly as we first made them."
-        products={classics}
-        viewAllHref="/shop?tag=classic"
-      />
+      <RecentlyViewed />
       <DeliverySteps />
-      <Testimonials />
     </>
   );
 }
+
+const soldOut = (p: Product) => !p.variants.some((v) => (v.available ?? 0) > 0);

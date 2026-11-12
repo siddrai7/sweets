@@ -11,7 +11,16 @@ import { ProductImage } from './product-image';
 import { WishlistButton } from './wishlist-button';
 import { VariantSheet } from './variant-sheet';
 
-export function ProductCard({ product, priority }: { product: Product; priority?: boolean }) {
+export function ProductCard({
+  product,
+  priority,
+  badge = true,
+}: {
+  product: Product;
+  priority?: boolean;
+  /** Show the "Bestseller" badge. */
+  badge?: boolean;
+}) {
   const inStock = product.variants.filter(isAvailable);
   const [variantId, setVariantId] = useState(inStock[0]?.id ?? product.variants[0]?.id);
   const [picking, setPicking] = useState(false);
@@ -43,7 +52,7 @@ export function ProductCard({ product, priority }: { product: Product; priority?
               {off}% off
             </span>
           )}
-          {product.tags.includes('bestseller') && (
+          {badge && product.tags.includes('bestseller') && (
             <span className="rounded-md bg-white/90 px-1.5 py-0.5 text-xs font-bold uppercase tracking-[0.12em] text-saffron-600 backdrop-blur">
               Bestseller
             </span>
