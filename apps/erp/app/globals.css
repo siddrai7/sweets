@@ -1,14 +1,96 @@
 @import 'tailwindcss';
 
+/*
+ * Back-office theme, taken from the logo: maroon, script gold and warm paper.
+ *
+ * `slate` is deliberately remapped to a warm cocoa-tinted neutral scale. Every page already
+ * uses slate for text, borders and surfaces, so changing the scale here re-tones the whole
+ * panel in one place. Keep using `slate-*` for neutrals and `brand-*` for actions.
+ */
 @theme {
-  --color-brand-50: #fff8ed;
-  --color-brand-100: #ffeed4;
-  --color-brand-600: #c96e06;
-  --color-brand-700: #a35209;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), Georgia, serif;
+
+  --color-brand-50: #fbf2f1;
+  --color-brand-100: #f6e1df;
+  --color-brand-200: #ecc5c2;
+  --color-brand-300: #d99a97;
+  --color-brand-500: #a3222f;
+  --color-brand-600: #861424;
+  --color-brand-700: #6e0b1a;
+  --color-brand-800: #59010f;
+  --color-brand-900: #3d020b;
+
+  --color-saffron-50: #fcf7ea;
+  --color-saffron-100: #f8edd3;
+  --color-saffron-300: #e8c987;
+  --color-saffron-400: #d9ae5b;
+  --color-saffron-500: #c4943a;
+  --color-saffron-600: #9e7428;
+
+  --color-slate-50: #faf6ef;
+  --color-slate-100: #f3ede3;
+  --color-slate-200: #e8dfd1;
+  --color-slate-300: #d6c9b6;
+  --color-slate-400: #a9998a;
+  --color-slate-500: #7b6c61;
+  --color-slate-600: #5e5048;
+  --color-slate-700: #453a33;
+  --color-slate-800: #2e2520;
+  --color-slate-900: #1f1612;
+
+  --shadow-card: 0 1px 2px rgb(61 2 11 / 0.04), 0 8px 24px -14px rgb(61 2 11 / 0.16);
+  --shadow-float: 0 18px 50px -16px rgb(61 2 11 / 0.45);
+
+  --animate-rise: rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+@layer base {
+  body {
+    @apply bg-slate-50 font-sans text-slate-900 antialiased;
+  }
+  h1 {
+    @apply font-display tracking-tight;
+  }
+  /* Section titles inside pages. Utilities on the element still win. */
+  h2 {
+    @apply font-display text-[1.15rem] text-brand-900;
+  }
+  /* Plain form controls written inline on the pages get the brand focus ring too. */
+  input,
+  select,
+  textarea {
+    @apply accent-brand-600;
+  }
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply border-brand-600 outline-none ring-2 ring-brand-100;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+  ::selection {
+    @apply bg-saffron-300 text-slate-900;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 /* Printing (packing slips): just the page content. */

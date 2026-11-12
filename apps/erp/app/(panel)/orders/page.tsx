@@ -3,25 +3,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
-import { nextActions } from '@/lib/orders';
+import { STATUS_TONE, nextActions, statusLabel } from '@/lib/orders';
 import { formatMoney } from '@sweets/api-client';
 import { ORDER_STATUSES } from '@sweets/types/constants';
 import type { OrderStatus } from '@sweets/types';
-import { Badge, Button, Empty, PageHeader, Table, Td, fmtDate } from '@/components/ui';
+import { Badge, Button, Empty, PageHeader, Table, Td, fmtDate, inputCls } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-
-const TONE: Partial<Record<OrderStatus, 'green' | 'amber' | 'red' | 'blue'>> = {
-  PENDING_PAYMENT: 'amber',
-  CONFIRMED: 'blue',
-  PREPARING: 'blue',
-  READY: 'blue',
-  OUT_FOR_DELIVERY: 'blue',
-  DELIVERED: 'green',
-  CANCELLED: 'red',
-  REFUNDED: 'red',
-};
-
-const label = (s: string) => s.replaceAll('_', ' ').toLowerCase();
 
 export default function OrdersPage() {
   const { api } = useAuth();
@@ -53,7 +40,10 @@ export default function OrdersPage() {
 
   return (
     <>
-      <PageHeader title="Orders" />
+      <PageHeader
+        title="Orders"
+        subtitle={data ? `${data.total} order${data.total === 1 ? '' : 's'}` : undefined}
+      />
       <div className="mb-4 flex flex-wrap gap-3">
         <input
           placeholder="Search order #, name, phone"
@@ -62,7 +52,7 @@ export default function OrdersPage() {
             setSearch(e.target.value);
             setPage(1);
           }}
-          className="w-64 rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+          className={`${inputCls} sm:!w-72`}
         />
         <select
           value={status}
@@ -70,12 +60,12 @@ export default function OrdersPage() {
             setStatus(e.target.value as OrderStatus | '');
             setPage(1);
           }}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+          className={`${inputCls} sm:!w-52`}
         >
           <option value="">All statuses</option>
           {ORDER_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {label(s)}
+              {statusLabel(s)}
             </option>
           ))}
         </select>
@@ -119,7 +109,7 @@ export default function OrdersPage() {
               </Td>
               <Td className="font-medium">{formatMoney(o.total)}</Td>
               <Td>
-                <Badge tone={TONE[o.status]}>{label(o.status)}</Badge>
+                <Badge tone={STATUS_TONE[o.status]}>{statusLabel(o.status)}</Badge>
               </Td>
               <Td className="text-xs text-slate-500">{fmtDate(o.createdAt)}</Td>
               <Td>
