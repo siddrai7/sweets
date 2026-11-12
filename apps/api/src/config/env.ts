@@ -31,13 +31,10 @@ const envSchema = z.object({
 
   // Seller details printed on GST tax invoices. PLACEHOLDERS: replace with the client's
   // registered details before issuing real invoices.
-  SELLER_LEGAL_NAME: z.string().min(1).default('Mithai House Foods Pvt. Ltd. (placeholder)'),
-  SELLER_TRADE_NAME: z.string().min(1).default('Mithai House'),
+  SELLER_LEGAL_NAME: z.string().min(1).default('RashoManjiri (legal name placeholder)'),
+  SELLER_TRADE_NAME: z.string().min(1).default('RashoManjiri'),
   SELLER_GSTIN: z.string().length(15).default('27AAAAA0000A1Z5'),
-  SELLER_ADDRESS: z
-    .string()
-    .min(1)
-    .default('Shop No. 1, Main Road, Thane West, Maharashtra 400601'),
+  SELLER_ADDRESS: z.string().min(1).default('Baramati, Pune District, Maharashtra 413102'),
   /** State for CGST+SGST vs IGST, and its 2-digit GST state code. */
   SELLER_STATE: z.string().min(1).default('Maharashtra'),
   SELLER_STATE_CODE: z.string().length(2).default('27'),

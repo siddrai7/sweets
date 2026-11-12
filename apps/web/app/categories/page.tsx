@@ -54,7 +54,7 @@ export default async function CategoriesPage() {
           {
             href: '/our-story',
             title: 'Our story',
-            body: 'Three decades of mithai, made by hand.',
+            body: 'A new kitchen, and how we make things.',
           },
           { href: '/contact', title: 'Need help?', body: 'Bulk orders, gifting and questions.' },
         ].map((l) => (

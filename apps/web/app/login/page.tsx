@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ApiError } from '@sweets/api-client';
 import { ArtImage } from '@/components/art/art-image';
-import { LogoMark } from '@/components/layout/logo';
+import { LogoBadge } from '@/components/layout/logo';
 import { CheckIcon } from '@/components/ui/icons';
 import { useSession } from '@/lib/session';
 import { site } from '@/lib/site';
@@ -70,7 +70,7 @@ function LoginForm() {
       <div className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] bg-white ring-1 ring-brand-200 lg:grid-cols-2">
         <div className="relative hidden overflow-hidden bg-brand-900 p-12 text-brand-100 lg:block">
           <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-brand-600/40 blur-3xl" />
-          <LogoMark size={48} className="relative text-brand-600" />
+          <LogoBadge size={120} className="relative" />
           <h2 className="relative mt-10 text-4xl font-light leading-tight text-white">
             Welcome to the <em className="text-saffron-300">{site.name}</em> family.
           </h2>

@@ -87,7 +87,7 @@ export function CartButton() {
       onClick={openCart}
       className={`flex h-12 items-center gap-2.5 rounded-2xl px-4 text-sm font-bold transition ${
         filled
-          ? 'bg-brand-600 text-white shadow-[0_8px_20px_-10px_rgb(125_27_40/0.9)] hover:bg-brand-700'
+          ? 'bg-brand-600 text-white shadow-[0_8px_20px_-10px_rgb(134_20_36/0.9)] hover:bg-brand-700'
           : 'border border-brand-200 bg-white hover:border-cocoa/30'
       } ${bump ? 'animate-pop' : ''}`}
       aria-label={`Cart, ${count} items`}

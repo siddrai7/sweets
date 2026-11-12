@@ -20,7 +20,7 @@ export const policies: Record<string, Policy> = {
       {
         heading: 'Where we deliver',
         body: [
-          'We currently deliver within selected pincodes in Thane, Mumbai and Navi Mumbai. Enter your pincode at checkout to confirm we deliver to you.',
+          'We currently deliver within selected pincodes in Baramati and Pune. Enter your pincode at checkout to confirm we deliver to you.',
         ],
       },
       {
@@ -104,7 +104,7 @@ export const policies: Record<string, Policy> = {
       {
         heading: 'Governing law',
         body: [
-          'These terms are governed by the laws of India and subject to the jurisdiction of the courts of Thane, Maharashtra.',
+          'These terms are governed by the laws of India and subject to the jurisdiction of the courts of Pune, Maharashtra.',
         ],
       },
     ],

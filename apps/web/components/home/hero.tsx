@@ -1,158 +1,101 @@
 import Link from 'next/link';
-import { ArtImage } from '@/components/art/art-image';
-import { ArrowRight, StarIcon } from '@/components/ui/icons';
-import { heroFeatures } from '@/content/home';
-import { artFor } from '@/lib/art';
+import { LogoBadge } from '@/components/layout/logo';
+import { ArrowRight } from '@/components/ui/icons';
 import { site } from '@/lib/site';
 
-/** Circular "made fresh today" seal with text set on a path. */
-function FreshSeal() {
-  const text = `MADE FRESH EVERY MORNING · SINCE ${site.established} · `;
+const FACTS = [
+  ['100%', 'pure desi ghee'],
+  ['Zero', 'preservatives'],
+  ['Same day', 'delivery'],
+] as const;
+
+/** Rangoli ring drawn behind the logo. */
+function Rings({ className = '' }: { className?: string }) {
   return (
-    <div className="relative h-28 w-28 sm:h-32 sm:w-32">
-      <svg
-        viewBox="0 0 120 120"
-        className="absolute inset-0 h-full w-full animate-[spin_24s_linear_infinite]"
-      >
-        <defs>
-          <path id="seal-path" d="M60 60m-46 0a46 46 0 1 1 92 0a46 46 0 1 1-92 0" />
-        </defs>
-        <circle cx="60" cy="60" r="58" fill="#2d0a10" />
-        <text fill="#e8c987" fontSize="9.2" fontWeight="700" letterSpacing="2.4">
-          <textPath href="#seal-path">{text}</textPath>
-        </text>
-      </svg>
-      <span className="absolute inset-0 flex flex-col items-center justify-center text-center font-display text-saffron-300">
-        <span className="text-xs font-sans font-bold uppercase tracking-[0.2em]">Est.</span>
-        <span className="text-2xl italic leading-none">{site.established}</span>
-      </span>
-    </div>
+    <svg viewBox="0 0 200 200" className={className} aria-hidden>
+      {[98, 86, 74].map((r) => (
+        <circle
+          key={r}
+          cx="100"
+          cy="100"
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="0.35"
+          strokeDasharray={r === 86 ? '1 3' : undefined}
+        />
+      ))}
+      {Array.from({ length: 32 }, (_, i) => (
+        <circle
+          key={i}
+          cx={100 + Math.cos((i / 32) * Math.PI * 2) * 92}
+          cy={100 + Math.sin((i / 32) * Math.PI * 2) * 92}
+          r="1.1"
+          fill="currentColor"
+        />
+      ))}
+    </svg>
   );
 }
 
+/** The brand moment: the logo's own maroon, edge to edge, with the badge as the picture. */
 export function Hero() {
-  const [main, ...minor] = heroFeatures;
-  // Rounded down to the nearest five, e.g. "35+".
-  const years = Math.floor((new Date().getFullYear() - Number(site.established)) / 5) * 5;
-
   return (
-    <section className="relative overflow-hidden">
-      {/* Soft saffron glow and a faint rangoli ring behind the composition. */}
-      <div className="pointer-events-none absolute -right-40 -top-40 h-[42rem] w-[42rem] rounded-full bg-saffron-100/70 blur-3xl" />
-      <svg
-        className="pointer-events-none absolute -left-40 top-10 hidden h-[36rem] w-[36rem] text-saffron-400/25 lg:block"
-        viewBox="0 0 200 200"
-        aria-hidden
-      >
-        {[96, 80, 64].map((r) => (
-          <circle
-            key={r}
-            cx="100"
-            cy="100"
-            r={r}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.4"
-            strokeDasharray={r === 80 ? '1 3' : undefined}
-          />
-        ))}
-        {Array.from({ length: 24 }, (_, i) => (
-          <circle
-            key={i}
-            cx={100 + Math.cos((i / 24) * Math.PI * 2) * 88}
-            cy={100 + Math.sin((i / 24) * Math.PI * 2) * 88}
-            r="1.6"
-            fill="currentColor"
-          />
-        ))}
-      </svg>
+    <section className="relative overflow-hidden bg-brand-800 text-brand-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_80%_at_75%_45%,rgb(163_34_47/0.55),transparent_70%)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-brand-900/70 to-transparent" />
 
-      <div className="container-page relative grid items-center gap-10 pb-10 pt-6 sm:pt-10 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pb-20 lg:pt-14">
+      <div className="container-page relative grid items-center gap-6 pb-12 pt-8 sm:pb-16 sm:pt-12 lg:grid-cols-[1.1fr_1fr] lg:gap-12 lg:pb-24 lg:pt-20">
+        <div className="relative order-first mx-auto flex items-center justify-center lg:order-last">
+          <Rings className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[135%] -translate-x-1/2 -translate-y-1/2 text-saffron-400/30" />
+          <div className="pointer-events-none absolute inset-6 rounded-full bg-saffron-400/20 blur-3xl" />
+          <span className="relative block h-48 animate-rise sm:h-72 lg:h-[26rem]">
+            <LogoBadge
+              size={416}
+              fluid
+              priority
+              className="drop-shadow-[0_24px_40px_rgb(0_0_0/0.45)]"
+            />
+          </span>
+        </div>
+
         <div className="animate-rise">
-          <p className="eyebrow flex items-center gap-3">
+          <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.28em] text-saffron-300">
             <span className="h-px w-8 bg-saffron-400" />
-            Thane&apos;s mithaiwala since {site.established}
+            Now delivering in {site.delivery.area}
           </p>
-          <h1 className="mt-5 text-[2.7rem] font-light leading-[0.98] tracking-[-0.02em] sm:text-7xl lg:text-[4.1rem] xl:text-[4.55rem]">
-            Mithai, made <em className="font-normal text-brand-600">fresh</em>
-            <br className="hidden sm:block" /> every morning.
+          <h1 className="mt-5 text-[2.6rem] font-light leading-[1] tracking-[-0.02em] text-white sm:text-6xl lg:text-[4.1rem] xl:text-[4.5rem]">
+            Sweets and snacks, made <em className="font-normal text-saffron-300">fresh</em> in small
+            batches.
           </h1>
-          <p className="mt-4 max-w-md text-[0.95rem] sm:mt-6 sm:text-lg leading-relaxed text-cocoa-soft">
-            Pure desi ghee, family recipes and karigars with decades at the kadhai, delivered to
-            your door in {site.delivery.eta}.
+          <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-brand-200 sm:text-lg">
+            Mithai, namkeen and tea-time snacks cooked in pure desi ghee with nothing artificial,
+            and delivered the day they are made.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
-            <Link href="/shop?tag=bestseller" className="btn-primary group px-7 py-3.5">
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link href="/shop?tag=bestseller" className="btn-gold group px-7 py-3.5">
               Shop bestsellers
               <ArrowRight size={16} className="transition group-hover:translate-x-0.5" />
             </Link>
-            <Link href="/shop/dry-fruit-sweets" className="btn-ghost px-7 py-3.5">
-              Gift boxes
+            <Link
+              href="/categories"
+              className="inline-flex items-center justify-center rounded-full border border-saffron-300/50 px-7 py-3.5 text-sm font-semibold text-saffron-100 transition duration-200 hover:border-saffron-300 hover:bg-white/5 active:scale-[0.98]"
+            >
+              Browse the menu
             </Link>
           </div>
 
-          <dl className="mt-8 grid sm:mt-10 max-w-md grid-cols-3 divide-x divide-brand-200 border-y border-brand-200 py-4">
-            {[
-              [`${years}+`, 'years of recipes'],
-              ['100%', 'pure desi ghee'],
-              [site.delivery.eta.replace(' min', ''), 'minute delivery'],
-            ].map(([value, label]) => (
+          <dl className="mt-9 grid max-w-md grid-cols-3 divide-x divide-white/15 border-y border-white/15 py-4">
+            {FACTS.map(([value, label]) => (
               <div key={label} className="px-3 first:pl-0">
                 <dt className="sr-only">{label}</dt>
-                <dd className="font-display text-2xl sm:text-3xl">{value}</dd>
-                <dd className="text-xs font-semibold uppercase tracking-wider text-cocoa-soft">
+                <dd className="font-display text-xl text-white sm:text-2xl">{value}</dd>
+                <dd className="mt-0.5 text-[0.68rem] font-semibold uppercase tracking-wider text-brand-300 sm:text-xs">
                   {label}
                 </dd>
               </div>
             ))}
           </dl>
-        </div>
-
-        {/* Bento still-life composition. */}
-        <div className="relative grid h-72 grid-cols-[1.35fr_1fr] grid-rows-2 gap-3 sm:h-[28rem] sm:gap-4 lg:h-[34rem]">
-          {main && (
-            <Link
-              href={`/products/${main.slug}`}
-              className="group relative row-span-2 overflow-hidden rounded-[2rem] shadow-card"
-              style={{ backgroundColor: artFor(main.slug).tone.bg }}
-            >
-              <ArtImage
-                hints={[main.slug]}
-                fit="meet"
-                priority
-                className="absolute inset-0 h-full w-full -translate-y-6 scale-125 transition duration-700 group-hover:scale-[1.3]"
-              />
-              <span className="absolute inset-x-3 bottom-3 flex items-center justify-between rounded-2xl bg-white/85 px-4 py-3 backdrop-blur-md">
-                <span>
-                  <span className="block font-display text-lg leading-tight">{main.name}</span>
-                  {main.note && (
-                    <span className="flex items-center gap-1 text-xs text-cocoa-soft">
-                      <StarIcon size={12} className="text-saffron-500" /> {main.note}
-                    </span>
-                  )}
-                </span>
-                <ArrowRight size={18} className="transition group-hover:translate-x-1" />
-              </span>
-            </Link>
-          )}
-          {minor.map((f) => (
-            <Link
-              key={f.slug}
-              href={`/products/${f.slug}`}
-              className="group relative overflow-hidden rounded-[1.6rem] bg-white shadow-card"
-            >
-              <ArtImage
-                hints={[f.slug]}
-                className="h-full w-full transition duration-700 group-hover:scale-105"
-              />
-              <span className="absolute bottom-2.5 left-2.5 rounded-full bg-white/85 px-3 py-1 text-xs font-bold backdrop-blur-md">
-                {f.name}
-              </span>
-            </Link>
-          ))}
-          <div className="absolute -left-4 -top-6 hidden sm:block lg:-left-10 lg:top-1/2 lg:-translate-y-1/2">
-            <FreshSeal />
-          </div>
         </div>
       </div>
     </section>

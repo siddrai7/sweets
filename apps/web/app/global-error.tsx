@@ -22,7 +22,7 @@ export default function GlobalError({ reset }: { reset: () => void }) {
             padding: '12px 24px',
             borderRadius: 999,
             border: 0,
-            background: '#7d1b28',
+            background: '#861424',
             color: '#fff',
             fontSize: 16,
           }}

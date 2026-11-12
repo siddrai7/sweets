@@ -16,10 +16,10 @@ import {
 import { CATALOG_REVALIDATE, safe, serverApi } from '@/lib/api';
 import { buildCategoryTree } from '@/lib/categories';
 import { site } from '@/lib/site';
-import { LogoMark } from './logo';
+import { LogoBadge } from './logo';
 
 const PROMISES = [
-  { icon: SunIcon, title: 'Made fresh daily', body: 'Small batches, every morning' },
+  { icon: SunIcon, title: 'Made fresh', body: 'Small batches, never stored for weeks' },
   { icon: DropIcon, title: 'Pure desi ghee', body: 'No palm oil, no shortcuts' },
   {
     icon: TruckIcon,
@@ -52,16 +52,8 @@ export async function Footer() {
 
       <div className="container-page grid gap-12 py-14 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:gap-10">
         <div>
-          <Link href="/" prefetch={false} className="inline-flex items-center gap-3">
-            <LogoMark size={44} className="text-brand-600" />
-            <span>
-              <span className="block font-display text-2xl font-medium text-white">
-                {site.name}
-              </span>
-              <span className="text-xs font-bold uppercase tracking-[0.32em] text-saffron-400">
-                Est. {site.established}
-              </span>
-            </span>
+          <Link href="/" prefetch={false} className="inline-block" aria-label={`${site.name} home`}>
+            <LogoBadge size={150} />
           </Link>
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-brand-300">{site.description}</p>
 
@@ -153,7 +145,7 @@ export async function Footer() {
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col gap-3 py-6 text-xs text-brand-300 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {new Date().getFullYear()} {site.name}. Handcrafted in Thane with love.
+            © {new Date().getFullYear()} {site.name}. Made in {site.contact.city} with love.
           </p>
           <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <span className="flex items-center gap-1.5">

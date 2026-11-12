@@ -94,7 +94,7 @@ function ServiceAreas() {
               <input
                 value={pincodes}
                 onChange={(e) => setPincodes(e.target.value)}
-                placeholder="400601, 400602, 400603"
+                placeholder="413102, 413133"
                 className={inputCls}
               />
             </Field>
@@ -102,7 +102,7 @@ function ServiceAreas() {
               <input
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder="e.g. Thane West"
+                placeholder="e.g. Baramati"
                 maxLength={60}
                 className={inputCls}
               />

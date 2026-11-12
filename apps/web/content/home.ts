@@ -1,6 +1,7 @@
 /**
- * Homepage content. Phase A keeps this in code; a later phase moves banners and
- * testimonials into the ERP so the client can edit them without a deploy.
+ * Homepage content. Phase A keeps this in code; a later phase moves banners into the ERP so
+ * the client can edit them without a deploy. Customer quotes are deliberately absent: the
+ * shop is new, so the only reviews shown are real ones on product pages.
  */
 
 /** Promo cards under the hero. `art` picks the illustration until banner photography exists. */
@@ -44,7 +45,7 @@ export const banners: Banner[] = [
 export const promises = [
   {
     title: 'Fresh daily',
-    body: 'Made every morning in small batches, never stored for weeks.',
+    body: 'Made in small batches and sold fresh, never stored for weeks.',
     icon: 'sun',
   },
   {
@@ -54,46 +55,12 @@ export const promises = [
   },
   {
     title: 'No preservatives',
-    body: 'Nothing artificial. Just honest, traditional recipes.',
+    body: 'Nothing artificial. Just honest ingredients and proven recipes.',
     icon: 'leaf',
   },
   {
     title: 'Handcrafted',
-    body: 'Shaped by hand by karigars with decades of experience.',
+    body: 'Rolled, cut and packed by hand, one batch at a time.',
     icon: 'hand',
   },
 ] as const;
-
-export const testimonials = [
-  {
-    quote:
-      'The kaju katli is exactly how I remember it from my childhood. Thin, smooth and not too sweet. Our whole family orders from here for every festival.',
-    name: 'Priya S.',
-    place: 'Thane',
-  },
-  {
-    quote:
-      'Ordered rasmalai for a house party and it arrived perfectly chilled and packed. Guests kept asking where it was from!',
-    name: 'Rohan M.',
-    place: 'Navi Mumbai',
-  },
-  {
-    quote:
-      'Their motichoor ladoo is the best I have had in Mumbai. Fresh every time, you can taste the ghee.',
-    name: 'Anjali K.',
-    place: 'Kalyan',
-  },
-  {
-    quote:
-      'Great namkeen selection and the dry fruit ladoo with no sugar is perfect for my parents.',
-    name: 'Vikram P.',
-    place: 'Thane',
-  },
-];
-
-/** Products in the hero collage: one large, two small. Use slugs that exist in the catalog. */
-export const heroFeatures = [
-  { slug: 'kaju-katli', name: 'Kaju Katli', note: 'Our signature' },
-  { slug: 'motichoor-ladoo', name: 'Motichoor Ladoo' },
-  { slug: 'kesar-rasmalai', name: 'Kesar Rasmalai' },
-];

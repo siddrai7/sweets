@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function ProductPage({ params }: { params: Params }) {
   const product = await getProduct((await params).slug);
-  const [categories, related, reviews, together] = await Promise.all([
+  const [categories, sameCategory, popular, reviews, together] = await Promise.all([
     safe(serverApi.catalog.categories(CATALOG_REVALIDATE), []),
     safe(
       serverApi.catalog.products(
@@ -64,10 +64,21 @@ export default async function ProductPage({ params }: { params: Params }) {
       ),
       null,
     ),
+    safe(
+      serverApi.catalog.products(
+        { tag: 'bestseller', exclude: product.id, pageSize: 8 },
+        CATALOG_REVALIDATE,
+      ),
+      null,
+    ),
     safe(serverApi.reviews.forProduct(product.slug, 1, CATALOG_REVALIDATE), null),
     safe(serverApi.shopper.boughtTogether(product.slug, CATALOG_REVALIDATE), []),
   ]);
   const trail = categoryTrail(categories, product.categoryId);
+  // A small category would leave one lonely card, so top the shelf up with bestsellers.
+  const related = [...(sameCategory?.items ?? []), ...(popular?.items ?? [])]
+    .filter((p, i, all) => all.findIndex((o) => o.id === p.id) === i)
+    .slice(0, 8);
 
   // Structured data so search engines can show price and availability in results.
   const jsonLd = {
@@ -241,7 +252,7 @@ export default async function ProductPage({ params }: { params: Params }) {
       <ProductCarousel
         eyebrow="Pairs well with"
         title="You may also like"
-        products={related?.items ?? []}
+        products={related}
         viewAllHref={product.category ? `/shop/${product.category.slug}` : undefined}
       />
       <RecentlyViewed current={product.id} />

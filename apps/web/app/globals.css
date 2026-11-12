@@ -4,8 +4,9 @@
  * Design tokens. Swap these values for the client's brand colours; every component
  * uses the token names, never raw hex values.
  *
- * Direction: ivory paper, deep wine, gold-leaf accents. Quiet surfaces, hairline borders,
- * one strong colour for actions.
+ * Direction: taken from the logo. Deep maroon (800 is the logo's own field colour, so the
+ * badge sits flush on dark sections), cream script gold, tulsi green. Ivory paper for the
+ * shopping surfaces, maroon for the brand moments.
  */
 @theme {
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
@@ -17,11 +18,11 @@
   --color-brand-200: #e8dece;
   --color-brand-300: #d3c1a6;
   --color-brand-400: #b4654f;
-  --color-brand-500: #9a2a35;
-  --color-brand-600: #7d1b28;
-  --color-brand-700: #65131f;
-  --color-brand-800: #4b0e18;
-  --color-brand-900: #2d0a10;
+  --color-brand-500: #a3222f;
+  --color-brand-600: #861424;
+  --color-brand-700: #6e0b1a;
+  --color-brand-800: #59010f;
+  --color-brand-900: #3d020b;
 
   /* Accent: gold leaf and saffron. */
   --color-saffron-50: #fcf7ea;
@@ -42,8 +43,8 @@
   --color-cocoa: #1f1612;
   --color-cocoa-soft: #6f5f55;
 
-  --shadow-card: 0 1px 2px rgb(45 10 16 / 0.04), 0 8px 24px -12px rgb(45 10 16 / 0.12);
-  --shadow-float: 0 12px 40px -12px rgb(45 10 16 / 0.35);
+  --shadow-card: 0 1px 2px rgb(61 2 11 / 0.05), 0 10px 28px -12px rgb(61 2 11 / 0.18);
+  --shadow-float: 0 12px 40px -12px rgb(61 2 11 / 0.4);
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -158,6 +159,11 @@
 
 @utility btn-primary {
   @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Gold call to action, for maroon surfaces. */
+@utility btn-gold {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-saffron-400 px-6 py-3 text-sm font-bold text-brand-900 transition duration-200 hover:bg-saffron-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
 }
 
 @utility btn-outline {
